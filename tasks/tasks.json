@@ -1,0 +1,116 @@
+[
+  {
+    "id": "tbs-156-cap",
+    "category": "tbs",
+    "spec": "TS 38.214 5.1.3.2",
+    "trap": "N'_RE = 162 exceeds 156 and must be capped at 156 per PRB",
+    "params": {
+      "n_prb": 52,
+      "n_symb_sh": 14,
+      "n_dmrs_prb": 6,
+      "mcs_index": 20,
+      "mcs_table": 1,
+      "num_layers": 2,
+      "n_oh_prb": 0
+    },
+    "prompt": "You are a 5G NR physical-layer engineer. Following 3GPP TS 38.214 Section 5.1.3.2 exactly, compute the Transport Block Size (TBS) in bits for this PDSCH transmission:\n- MCS index table: TS 38.214 Table 5.1.3.1-1 (MCS index table 1, up to 64QAM)\n- MCS index I_MCS = 20\n- Allocated PRBs n_PRB = 52\n- PDSCH symbols in the slot N_symb^sh = 14\n- DM-RS REs per PRB N_DMRS^PRB = 6 (already includes the overhead of DM-RS CDM groups without data)\n- xOverhead N_oh^PRB = 0\n- Number of layers v = 2\n- Single codeword, scaling factor S = 1 (not a P-RNTI/RA-RNTI transmission)\n\nShow your working, then end your response with a final line in exactly this format (digits only, no commas or units):\nFINAL ANSWER: <integer>",
+    "answer": 54296,
+    "reference_trace": {
+      "Qm": 6,
+      "R": 0.5537109375,
+      "N_RE_prime": 162,
+      "N_RE": 8112,
+      "N_info": 53900.4375,
+      "step": 4,
+      "n": 10,
+      "N_info_prime": 54272,
+      "C": 7,
+      "TBS": 54296
+    }
+  },
+  {
+    "id": "tbs-low-rate-segmentation",
+    "category": "tbs",
+    "spec": "TS 38.214 5.1.3.2",
+    "trap": "R <= 1/4 in step 4: C uses 3816, not the 8424 branch",
+    "params": {
+      "n_prb": 273,
+      "n_symb_sh": 13,
+      "n_dmrs_prb": 12,
+      "mcs_index": 2,
+      "mcs_table": 1,
+      "num_layers": 4,
+      "n_oh_prb": 0
+    },
+    "prompt": "You are a 5G NR physical-layer engineer. Following 3GPP TS 38.214 Section 5.1.3.2 exactly, compute the Transport Block Size (TBS) in bits for this PDSCH transmission:\n- MCS index table: TS 38.214 Table 5.1.3.1-1 (MCS index table 1, up to 64QAM)\n- MCS index I_MCS = 2\n- Allocated PRBs n_PRB = 273\n- PDSCH symbols in the slot N_symb^sh = 13\n- DM-RS REs per PRB N_DMRS^PRB = 12 (already includes the overhead of DM-RS CDM groups without data)\n- xOverhead N_oh^PRB = 0\n- Number of layers v = 4\n- Single codeword, scaling factor S = 1 (not a P-RNTI/RA-RNTI transmission)\n\nShow your working, then end your response with a final line in exactly this format (digits only, no commas or units):\nFINAL ANSWER: <integer>",
+    "answer": 59496,
+    "reference_trace": {
+      "Qm": 2,
+      "R": 0.1884765625,
+      "N_RE_prime": 144,
+      "N_RE": 39312,
+      "N_info": 59275.125,
+      "step": 4,
+      "n": 10,
+      "N_info_prime": 59392,
+      "C": 16,
+      "TBS": 59496
+    }
+  },
+  {
+    "id": "tbs-256qam-xoverhead",
+    "category": "tbs",
+    "spec": "TS 38.214 5.1.3.2",
+    "trap": "xOverhead = 6 must be subtracted; 256QAM table 2 must be used",
+    "params": {
+      "n_prb": 106,
+      "n_symb_sh": 12,
+      "n_dmrs_prb": 12,
+      "mcs_index": 20,
+      "mcs_table": 2,
+      "num_layers": 2,
+      "n_oh_prb": 6
+    },
+    "prompt": "You are a 5G NR physical-layer engineer. Following 3GPP TS 38.214 Section 5.1.3.2 exactly, compute the Transport Block Size (TBS) in bits for this PDSCH transmission:\n- MCS index table: TS 38.214 Table 5.1.3.1-2 (MCS index table 2, up to 256QAM)\n- MCS index I_MCS = 20\n- Allocated PRBs n_PRB = 106\n- PDSCH symbols in the slot N_symb^sh = 12\n- DM-RS REs per PRB N_DMRS^PRB = 12 (already includes the overhead of DM-RS CDM groups without data)\n- xOverhead N_oh^PRB = 6\n- Number of layers v = 2\n- Single codeword, scaling factor S = 1 (not a P-RNTI/RA-RNTI transmission)\n\nShow your working, then end your response with a final line in exactly this format (digits only, no commas or units):\nFINAL ANSWER: <integer>",
+    "answer": 143400,
+    "reference_trace": {
+      "Qm": 8,
+      "R": 0.66650390625,
+      "N_RE_prime": 126,
+      "N_RE": 13356,
+      "N_info": 142429.21875,
+      "step": 4,
+      "n": 12,
+      "N_info_prime": 143360,
+      "C": 18,
+      "TBS": 143400
+    }
+  },
+  {
+    "id": "ldpc-filler-bits-bg2-large-tb",
+    "category": "ldpc",
+    "spec": "TS 38.212 5.2.2, 7.2.2",
+    "trap": "Large TB but R <= 1/4 forces base graph 2 (K_cb = 3840), not BG1",
+    "params": {
+      "tbs": 59496,
+      "mcs_index": 2,
+      "mcs_table": 1
+    },
+    "prompt": "You are a 5G NR physical-layer engineer. A PDSCH transport block of A = 59496 bits is scheduled with I_MCS = 2 from TS 38.214 Table 5.1.3.1-1 (MCS index table 1, up to 64QAM), i.e. target code rate R = 193/1024 and Q_m = 2.\n\nFollowing 3GPP TS 38.212 (LDPC base graph selection in Section 7.2.2, transport-block CRC attachment, and code block segmentation in Section 5.2.2), determine the number of filler bits F = K - K' inserted into EACH code block.\n\nShow your working, then end your response with a final line in exactly this format (digits only, no commas or units):\nFINAL ANSWER: <integer>",
+    "answer": 96,
+    "reference_trace": {
+      "base_graph": 2,
+      "A": 59496,
+      "TB_CRC": 24,
+      "B": 59520,
+      "L": 24,
+      "C": 16,
+      "B_prime": 59904,
+      "K_prime": 3744,
+      "Kb": 10,
+      "Zc": 384,
+      "K": 3840,
+      "filler_bits": 96
+    }
+  }
+]

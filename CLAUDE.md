@@ -17,7 +17,7 @@ against the spec, runs the eval with their own API keys, records the video, and 
 
 ## Working rules
 - Claude creates/edits files; **the user commits and pushes themselves**. Tell them when to commit and suggest a message. Do not run `git commit`/`git push`.
-- Python only (local Python is 3.9.6, so keep code 3.9-compatible). No frontend.
+- Python only, 3.10+ required (current SDKs need it). Local venv: `/opt/homebrew/bin/python3.11 -m venv .venv`. No frontend.
 - Use exact arithmetic (`fractions.Fraction`) in reference code: spec boundaries such as R <= 0.67 and R <= 1/4 matter.
 - Judges check: reproducibility from README alone, no false passes / false fails in grading.
 
@@ -25,13 +25,13 @@ against the spec, runs the eval with their own API keys, records the video, and 
 - `reference/` — golden-answer calculators (`tbs.py`: TS 38.214 §5.1.3.2; `ldpc.py`: TS 38.212 §5.2.2, §7.2.2)
 - `tests/` — sanity tests for the reference code (`python -m pytest -q`)
 - `tasks/tasks.json` — the eval tasks (prompt, golden answer, spec reference)
-- `src/run_eval.py` — queries models (Anthropic, OpenAI, Google), saves raw outputs to `results/`
+- `src/run_eval.py` — queries models (Anthropic, OpenAI), saves raw outputs to `results/`
 - `src/grade.py` — exact numeric grading
 - Deliverables: README.md, requirements.txt, .env.example, results/, video ≤5 min (YouTube/Loom, not in zip)
 
 ## Plan
 1. ✅ Skeleton + reference calculators + tests
-2. Pilot: 3–4 tasks against models. If models ace them, switch to backup "RF-LinkBench" (link budgets / dB traps)
+2. 🔄 Pilot (4 tasks built via `python -m src.build_tasks`): 3–4 tasks against models. If models ace them, switch to backup "RF-LinkBench" (link budgets / dB traps)
 3. Write 5–10 final tasks, calibrate difficulty
 4. run_eval.py + grade.py, full run, results table
 5. README, video script, final zip
