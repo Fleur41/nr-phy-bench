@@ -44,7 +44,9 @@ def extract_answer(text: str):
 
 
 def grade_file(*raw_paths: Path) -> tuple[list[dict], dict]:
-    golden = {t["id"]: t["answer"] for t in json.loads(TASKS.read_text())}
+    tasks = json.loads(TASKS.read_text())
+    golden = {t["id"]: t["answer"] for t in tasks}
+    level = {t["id"]: t.get("level", 1) for t in tasks}
     rows = []
     lines = [ln for p in raw_paths for ln in p.read_text().splitlines() if ln.strip()]
     for line in lines:
@@ -59,7 +61,8 @@ def grade_file(*raw_paths: Path) -> tuple[list[dict], dict]:
             else:
                 status = "correct" if parsed == golden[rec["task_id"]] else "wrong"
         rows.append({
-            "task_id": rec["task_id"], "model": rec["model"], "sample": rec.get("sample", 0),
+            "task_id": rec["task_id"], "level": level[rec["task_id"]],
+            "model": rec["model"], "sample": rec.get("sample", 0),
             "expected": golden[rec["task_id"]], "parsed": parsed, "status": status,
         })
 
@@ -72,7 +75,9 @@ def grade_file(*raw_paths: Path) -> tuple[list[dict], dict]:
 
 def to_markdown(rows: list[dict], summary: dict) -> str:
     models = sorted(summary)
-    task_ids = sorted({r["task_id"] for r in rows})
+    task_ids = sorted({r["task_id"] for r in rows},
+                      key=lambda t: (next(r["level"] for r in rows if r["task_id"] == t), t))
+    levels = sorted({r["level"] for r in rows})
     out = ["| Model | Correct | Wrong | No answer | Truncated | Error | Accuracy |",
            "|---|---|---|---|---|---|---|"]
     for m in models:
@@ -80,8 +85,18 @@ def to_markdown(rows: list[dict], summary: dict) -> str:
         acc = s["correct"] / s["total"] if s["total"] else 0
         out.append(f"| {m} | {s['correct']} | {s['wrong']} | {s['no_answer']} | "
                    f"{s['truncated']} | {s['error']} | {acc:.0%} |")
-    out += ["", "| Task | Expected | " + " | ".join(models) + " |",
-            "|---|---|" + "---|" * len(models)]
+    names = {1: "L1 explicit", 2: "L2 derived", 3: "L3 chained", 4: "L4 LBRM"}
+    out += ["", "| Model | " + " | ".join(names.get(lv, f"L{lv}") for lv in levels) + " |",
+            "|---|" + "---|" * len(levels)]
+    for m in models:
+        cells = []
+        for lv in levels:
+            rs = [r for r in rows if r["model"] == m and r["level"] == lv]
+            ok = sum(r["status"] == "correct" for r in rs)
+            cells.append(f"{ok}/{len(rs)} ({ok / len(rs):.0%})" if rs else "-")
+        out.append(f"| {m} | " + " | ".join(cells) + " |")
+    out += ["", "| Task | Level | Expected | " + " | ".join(models) + " |",
+            "|---|---|---|" + "---|" * len(models)]
     for tid in task_ids:
         cells = []
         for m in models:
@@ -89,8 +104,8 @@ def to_markdown(rows: list[dict], summary: dict) -> str:
             cells.append(", ".join(
                 "✅" if r["status"] == "correct" else f"❌ {r['parsed']}" if r["status"] == "wrong"
                 else r["status"] for r in rs))
-        expected = rows[[r["task_id"] for r in rows].index(tid)]["expected"]
-        out.append(f"| {tid} | {expected} | " + " | ".join(cells) + " |")
+        first = next(r for r in rows if r["task_id"] == tid)
+        out.append(f"| {tid} | L{first['level']} | {first['expected']} | " + " | ".join(cells) + " |")
     return "\n".join(out) + "\n"
 
 

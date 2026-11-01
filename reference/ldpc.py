@@ -82,6 +82,41 @@ def rate_match_lengths(G: int, C: int, num_layers: int, qm: int) -> list[int]:
     return [small if j < n_small else large for j in range(C)]
 
 
+# TS 38.212 Table 5.4.2.1-1: n_PRB,LBRM from the maximum number of PRBs across all
+# configured DL BWPs of the carrier. (upper bound of range, n_PRB_LBRM)
+_N_PRB_LBRM = [(32, 32), (66, 66), (107, 107), (135, 135), (162, 162), (217, 217), (10**9, 273)]
+
+R_LBRM = Fraction(2, 3)
+
+
+def n_prb_lbrm(max_bwp_prbs: int) -> int:
+    """Table 5.4.2.1-1: <33 -> 32, 33..66 -> 66, 67..107 -> 107, 108..135 -> 135,
+    136..162 -> 162, 163..217 -> 217, >217 -> 273."""
+    for upper, value in _N_PRB_LBRM:
+        if max_bwp_prbs <= upper:
+            return value
+    raise ValueError(max_bwp_prbs)
+
+
+def tbs_lbrm(max_bwp_prbs: int, max_layers: int, mcs_table: int) -> int:
+    """TBS_LBRM per TS 38.212 5.4.2.1 (DL-SCH): TBS procedure of TS 38.214 5.1.3.2 with
+    v = min(maxMIMO-Layers, 4), the highest modulation order of the configured MCS table,
+    R = 948/1024, and N_RE = 156 * n_PRB,LBRM."""
+    from reference.tbs import compute_tbs
+
+    highest_mcs = {1: 28, 2: 27}[mcs_table]  # both rows have R x 1024 = 948
+    # 13 symbols with no DM-RS gives N'_RE = 156, so N_RE = 156 * n_PRB_LBRM exactly.
+    return compute_tbs(n_prb_lbrm(max_bwp_prbs), 13, 0, highest_mcs, mcs_table,
+                       min(max_layers, 4), 0)
+
+
+def n_cb_lbrm(base_graph: int, zc: int, C: int, tbs_lbrm_bits: int) -> int:
+    """N_cb = min(N, N_ref), N_ref = floor(TBS_LBRM / (C * R_LBRM))."""
+    n = (66 if base_graph == 1 else 50) * zc
+    n_ref = math.floor(Fraction(tbs_lbrm_bits) / (C * R_LBRM))
+    return min(n, n_ref)
+
+
 # TS 38.212 Table 5.4.2.1-2: k0 numerators (BG1 over 66*Zc, BG2 over 50*Zc)
 _K0_NUM = {1: (0, 17, 33, 56), 2: (0, 13, 25, 43)}
 

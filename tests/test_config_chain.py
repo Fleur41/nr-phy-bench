@@ -36,3 +36,20 @@ def test_k0_without_lbrm():
     assert circular_buffer_k0(1, 384, 0) == 0
     assert circular_buffer_k0(1, 384, 2) == 33 * 384
     assert circular_buffer_k0(2, 352, 3) == 43 * 352
+
+
+def test_n_prb_lbrm_table_boundaries():
+    from reference.ldpc import n_prb_lbrm
+    assert [n_prb_lbrm(x) for x in (24, 32, 33, 66, 67, 106, 107, 108, 133, 135, 136, 162, 163, 217, 218, 273)] == \
+           [32, 32, 66, 66, 107, 107, 107, 135, 135, 135, 162, 162, 217, 217, 273, 273]
+
+
+def test_lbrm_hand_worked():
+    # 50 MHz @ 30 kHz (133 PRB) -> n_PRB,LBRM = 135; v = min(8, 4) = 4; 256QAM, R = 948/1024
+    # N_info = 156*135*948/1024*8*4 = 623,902.5 -> TBS_LBRM = 622,760 (reference)
+    # C = 53, N_ref = floor(622760 / (53 * 2/3)) = floor(17625.28) = 17625 < N = 66*384
+    # k0(rv3) = floor(56 * 17625 / (66 * 384)) * 384 = 38 * 384 = 14592
+    from reference.ldpc import circular_buffer_k0, n_cb_lbrm, tbs_lbrm
+    assert tbs_lbrm(133, 8, 2) == 622760
+    assert n_cb_lbrm(1, 384, 53, 622760) == 17625
+    assert circular_buffer_k0(1, 384, 3, 17625) == 14592

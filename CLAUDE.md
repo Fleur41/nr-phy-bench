@@ -34,6 +34,7 @@ against the spec, runs the eval with their own API keys, records the video, and 
 1. ✅ Skeleton + reference calculators + tests
 2. ✅ Pilot (Nov 1): Gemini 3.8 Flash 4/4 on L1, gpt-oss-120b failed (fell for BG1 trap). Decision: keep NR-PHY-Bench, add harder L2/L3 tasks
    - Free models in use: Gemini (free tier; 3.1 Pro not available free), Groq (TPM limits too tight), GitHub Models (retired 2026-07-30, removed). Paid Anthropic/OpenAI optional
-3. 🔄 10 tasks built (4 L1, 3 L2, 3 L3); calibrating against Gemini 3.8 Flash. Owner must verify tables in reference/nr_config.py
+3. 🔄 12 tasks (4 L1, 3 L2, 3 L3, 2 L4 LBRM). Gemini 3.8 Flash solved L1-L3 in early samples, so L4 (LBRM k0) was added. Owner must verify tables in reference/nr_config.py and ldpc.py (Table 5.4.2.1-1)
+   - Final runs: results/raw/*_flash-{a,b,c,d}, *_gemma4-31b(-l4), *_gpt-oss-120b (+ L4 pending). Settings: effort high, 65k max tokens. Exploratory runs in results/pilot/
 4. run_eval.py + grade.py, full run, results table
 5. README, video script, final zip

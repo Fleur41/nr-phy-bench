@@ -1,0 +1,92 @@
+[
+  {
+    "task_id": "tbs-156-cap",
+    "level": 1,
+    "model": "gemini:gemini-3.8-flash",
+    "sample": 0,
+    "expected": 54296,
+    "parsed": 54296,
+    "status": "correct"
+  },
+  {
+    "task_id": "tbs-156-cap",
+    "level": 1,
+    "model": "gemini:gemini-3.8-flash",
+    "sample": 1,
+    "expected": 54296,
+    "parsed": 54296,
+    "status": "correct"
+  },
+  {
+    "task_id": "tbs-156-cap",
+    "level": 1,
+    "model": "gemini:gemma-4-31b-it",
+    "sample": 0,
+    "expected": 54296,
+    "parsed": 67392,
+    "status": "wrong"
+  },
+  {
+    "task_id": "tbs-156-cap",
+    "level": 1,
+    "model": "groq:openai/gpt-oss-120b",
+    "sample": 0,
+    "expected": 54296,
+    "parsed": 81880,
+    "status": "wrong"
+  },
+  {
+    "task_id": "tbs-156-cap",
+    "level": 1,
+    "model": "groq:openai/gpt-oss-120b",
+    "sample": 1,
+    "expected": 54296,
+    "parsed": 24920,
+    "status": "wrong"
+  },
+  {
+    "task_id": "tbs-156-cap",
+    "level": 1,
+    "model": "groq:openai/gpt-oss-120b",
+    "sample": 2,
+    "expected": 54296,
+    "parsed": null,
+    "status": "error"
+  },
+  {
+    "task_id": "tbs-low-rate-segmentation",
+    "level": 1,
+    "model": "groq:openai/gpt-oss-120b",
+    "sample": 0,
+    "expected": 59496,
+    "parsed": 94600,
+    "status": "wrong"
+  },
+  {
+    "task_id": "tbs-low-rate-segmentation",
+    "level": 1,
+    "model": "groq:openai/gpt-oss-120b",
+    "sample": 1,
+    "expected": 59496,
+    "parsed": 61440,
+    "status": "wrong"
+  },
+  {
+    "task_id": "cfg-tbs-100mhz-256qam-4layer",
+    "level": 2,
+    "model": "gemini:gemini-3.8-flash",
+    "sample": 0,
+    "expected": 868584,
+    "parsed": 868584,
+    "status": "correct"
+  },
+  {
+    "task_id": "cfg-filler-bits-ld-trap",
+    "level": 3,
+    "model": "gemini:gemini-3.8-flash",
+    "sample": 0,
+    "expected": 136,
+    "parsed": 136,
+    "status": "correct"
+  }
+]

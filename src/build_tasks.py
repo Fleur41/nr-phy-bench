@@ -12,7 +12,8 @@ import json
 from pathlib import Path
 
 from reference import nr_config as cfg
-from reference.ldpc import rate_match_lengths, segment, select_base_graph
+from reference.ldpc import (circular_buffer_k0, n_cb_lbrm, rate_match_lengths, segment,
+                             select_base_graph, tbs_lbrm)
 from reference.tbs import MCS_TABLES, compute_tbs
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -64,7 +65,9 @@ LDPC_TASKS = [
 # Level 2/3 tasks: the model gets a realistic configuration, not the formula inputs.
 # It must derive n_PRB, the DM-RS overhead and N_symb^sh itself (level 2), and
 # for level 3 carry the result through LDPC segmentation or rate matching.
-# question: "tbs" | "filler_bits" | "E_first" | "E_last"
+# Level 4 adds limited buffer rate matching (LBRM), which needs a second, hypothetical
+# TBS (TBS_LBRM) and the circular-buffer start position k0 for a redundancy version.
+# question: "tbs" | "filler_bits" | "E_first" | "E_last" | "k0"
 CONFIG_TASKS = [
     {
         "id": "cfg-tbs-100mhz-256qam-4layer", "level": 2, "question": "tbs",
@@ -114,6 +117,24 @@ CONFIG_TASKS = [
                        dmrs_type=1, cdm_groups_without_data=2, additional_position=2,
                        mcs_index=27, mcs_table=2, num_layers=4, xoverhead=0),
     },
+    {
+        "id": "lbrm-k0-rv3-maxmimo8", "level": 4, "question": "k0",
+        "trap": "TBS_LBRM uses v = min(maxMIMO-Layers, 4) = 4, not 8, and n_PRB,LBRM = 135; "
+                "N_cb = N_ref = 17625 < N, so k0 = 14592 (v = 8 or ignoring LBRM gives 21504)",
+        "config": dict(bandwidth_mhz=50, scs_khz=30, start_symbol=2, length=12,
+                       dmrs_type=1, cdm_groups_without_data=2, additional_position=1,
+                       mcs_index=25, mcs_table=2, num_layers=4, xoverhead=0,
+                       max_mimo_layers=8, rv=3),
+    },
+    {
+        "id": "lbrm-k0-rv2-2layer", "level": 4, "question": "k0",
+        "trap": "N_ref = floor(TBS_LBRM / (C x 2/3)) = 18297 < N = 25344 is not a multiple "
+                "of Z_c, so k0 needs the floor: 8832 (ignoring LBRM gives 12672)",
+        "config": dict(bandwidth_mhz=80, scs_khz=30, start_symbol=2, length=12,
+                       dmrs_type=1, cdm_groups_without_data=2, additional_position=1,
+                       mcs_index=24, mcs_table=2, num_layers=2, xoverhead=0,
+                       max_mimo_layers=2, rv=2),
+    },
 ]
 
 
@@ -129,11 +150,18 @@ def solve_config(c: dict) -> dict:
     seg = segment(tbs, bg)
     G = cfg.data_re_actual(n_prb, c["length"], n_dmrs_prb) * qm * c["num_layers"]
     E = rate_match_lengths(G, seg["C"], c["num_layers"], qm)
+    lbrm = {}
+    if "max_mimo_layers" in c:
+        # A single BWP spanning the carrier, so the max BWP size is n_PRB.
+        t_lbrm = tbs_lbrm(n_prb, c["max_mimo_layers"], c["mcs_table"])
+        n_cb = n_cb_lbrm(bg, seg["Zc"], seg["C"], t_lbrm)
+        lbrm = {"TBS_LBRM": t_lbrm, "N_cb": n_cb,
+                "k0": circular_buffer_k0(bg, seg["Zc"], c["rv"], n_cb)}
     return {
         "n_PRB": n_prb, "l_d": cfg.type_a_ld(c["start_symbol"], c["length"]),
         "dmrs_symbols": n_dmrs_sym, "N_DMRS_PRB": n_dmrs_prb, "tbs_trace": trace,
         "tbs": tbs, "base_graph": bg, "segmentation": seg, "filler_bits": seg["filler_bits"],
-        "G": G, "E_first": E[0], "E_last": E[-1],
+        "G": G, "E_first": E[0], "E_last": E[-1], **lbrm,
     }
 
 
@@ -150,13 +178,23 @@ CONFIG_QUESTIONS = {
     "E_last": ("the rate-matching output sequence length E (in bits) of the LAST code "
                "block (r = C-1), following TS 38.212 Section 5.4.2.1",
                "TS 38.214 5.1.3.2; TS 38.212 5.2.2, 5.4.2.1, 7.2.2"),
+    "k0": ("the starting position k0 (in bits) in the circular buffer for the redundancy "
+           "version given above, for the first code block, following TS 38.212 Section "
+           "5.4.2.1 (including the limited-buffer circular buffer size N_cb)",
+           "TS 38.214 5.1.3.2; TS 38.212 5.2.2, 5.4.2.1 (LBRM), 7.2.2"),
 }
 
 
 def config_prompt(t: dict) -> str:
     c = t["config"]
     rm = ""
-    if t["question"].startswith("E_"):
+    if t["question"] == "k0":
+        rm = (f"- Redundancy version rv_id = {c['rv']}\n"
+              "- Limited buffer rate matching applies (I_LBRM = 1). The UE has a single DL BWP "
+              "spanning the full carrier, PDSCH-ServingCellConfig maxMIMO-Layers = "
+              f"{c['max_mimo_layers']}, and the configured mcs-Table is "
+              f"{'qam256' if c['mcs_table'] == 2 else 'qam64'}\n")
+    elif t["question"].startswith("E_"):
         rm = ("- All code blocks of the transport block are scheduled (no CBG-based "
               "transmission); limited buffer rate matching is not configured\n")
     return (

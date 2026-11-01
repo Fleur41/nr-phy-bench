@@ -27,7 +27,7 @@ implementation of the spec, so grading is exact: no rubric and no LLM judge.
 
 ## What the tasks test
 
-10 tasks in three difficulty levels. Each task is built around a specific **trap**: a step
+12 tasks in four difficulty levels. Each task is built around a specific **trap**: a step
 where a plausible mistake produces a different final integer. The trap for each task is
 recorded in `tasks/tasks.json`.
 
@@ -36,6 +36,7 @@ recorded in `tasks/tasks.json`.
 | **L1: explicit inputs** | Apply the procedure when every formula input is given | 4 |
 | **L2: derived inputs** | Derive n_PRB from the carrier bandwidth (TS 38.101-1) and the DM-RS overhead from the DM-RS configuration (TS 38.211), then compute the TBS | 3 |
 | **L3: derived and chained** | As L2, then carry the result through LDPC base-graph selection, code-block segmentation or rate matching (TS 38.212) | 3 |
+| **L4: limited buffer rate matching** | As L3, plus a second, hypothetical TBS (TBS_LBRM) to size the circular buffer, then the redundancy-version start position k0 | 2 |
 
 | Task | Level | Trap |
 |---|---|---|
@@ -49,6 +50,8 @@ recorded in `tasks/tasks.json`.
 | `cfg-filler-bits-ld-trap` | L3 | For mapping type A, l_d counts from the slot start (S + L = 10, not L = 8) |
 | `cfg-ratematch-E-xoverhead` | L3 | xOverhead affects the TBS only, not the rate-matching budget G |
 | `cfg-ratematch-E-last-cb` | L3 | G is not divisible by C, so the last code blocks get the larger E |
+| `lbrm-k0-rv3-maxmimo8` | L4 | TBS_LBRM uses v = min(maxMIMO-Layers, 4) = 4, not 8, and n_PRB,LBRM = 135 |
+| `lbrm-k0-rv2-2layer` | L4 | N_ref = 18297 is not a multiple of Z_c, so k0 needs the floor; ignoring LBRM gives 12672 |
 
 ## How grading works
 
@@ -78,7 +81,7 @@ trace of intermediate values (N_RE, N_info, C, Z_c, G and so on) for checking.
 | Reference module | Spec |
 |---|---|
 | `reference/tbs.py` | TS 38.214 §5.1.3.2, Tables 5.1.3.1-1, 5.1.3.1-2, 5.1.3.2-1 |
-| `reference/ldpc.py` | TS 38.212 §5.2.2 (segmentation), §5.4.2.1 (rate matching), §7.2.2 (base graph), Table 5.3.2-1 (lifting sizes) |
+| `reference/ldpc.py` | TS 38.212 §5.2.2 (segmentation), §5.4.2.1 (rate matching, LBRM, k0), §7.2.2 (base graph), Tables 5.3.2-1 (lifting sizes), 5.4.2.1-1 (n_PRB,LBRM), 5.4.2.1-2 (k0) |
 | `reference/nr_config.py` | TS 38.101-1 Table 5.3.2-1 (N_RB), TS 38.211 §7.4.1.1.2 (DM-RS) |
 
 The reference code uses exact rational arithmetic (`fractions.Fraction`). Spec boundaries
@@ -140,11 +143,13 @@ _Results will be added after the full run._
   add them with one command.
 - **Free-tier quotas.** Groq's per-minute token limits can block or cut off long reasoning
   outputs. These show up as `error` or `truncated`, never as `wrong`.
-- **Small task set.** 10 tasks × 3 samples gives a directional signal, not tight confidence
+- **Small task set.** 12 tasks × 3 samples gives a directional signal, not tight confidence
   intervals. The task generator makes it easy to add more configurations.
 - **Scope.** Downlink PDSCH, FR1, single-symbol DM-RS, PDSCH mapping type A, no
   limited-buffer rate matching. Uplink transform precoding, mapping type B, FR2 and
-  multi-TRP are not covered yet.
+  multi-TRP are not covered yet. The L3 rate-matching prompts state that limited
+  buffer rate matching is not configured. This is a stated assumption: E does not depend on N_cb, so it
+  does not change the answer. L4 covers LBRM explicitly.
 - **Hand-entered spec tables.** The MCS, TBS, N_RB and DM-RS tables were entered by hand
   from the 3GPP specifications and checked by the author. Corrections only need a table
   edit and `python -m src.build_tasks`. Model responses can be regraded without rerunning
