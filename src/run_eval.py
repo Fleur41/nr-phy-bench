@@ -86,7 +86,6 @@ def call_openai(model: str, prompt: str) -> dict:
 # provider -> (base_url, env var holding the key)
 COMPATIBLE = {
     "gemini": ("https://generativelanguage.googleapis.com/v1beta/openai/", "GEMINI_API_KEY"),
-    "github": ("https://models.github.ai/inference", "GITHUB_TOKEN"),
     "openrouter": ("https://openrouter.ai/api/v1", "OPENROUTER_API_KEY"),
     "groq": ("https://api.groq.com/openai/v1", "GROQ_API_KEY"),
 }
@@ -136,19 +135,6 @@ PROVIDERS = {"anthropic": call_anthropic, "openai": call_openai,
 
 def list_models(provider: str) -> None:
     load_dotenv(ROOT / ".env")
-    if provider == "github":
-        # GitHub Models publishes its list at a separate catalog endpoint.
-        import os
-        import urllib.request
-
-        req = urllib.request.Request(
-            "https://models.github.ai/catalog/models",
-            headers={"Authorization": f"Bearer {os.environ.get('GITHUB_TOKEN', '')}",
-                     "Accept": "application/vnd.github+json"})
-        with urllib.request.urlopen(req, timeout=30) as r:
-            for m in sorted(json.load(r), key=lambda m: m["id"]):
-                print(f"github:{m['id']}")
-        return
     if provider in COMPATIBLE:
         client = _compatible_client(provider)
     elif provider == "openai":
