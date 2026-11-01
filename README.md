@@ -148,8 +148,10 @@ _Results will be added after the full run._
   free tier, and Claude and GPT models have no free API tier. The other models are
   open-weight. The harness already supports Anthropic and OpenAI, so anyone with keys can
   add them with one command.
-- **Free-tier quotas.** Groq's per-minute token limits can block or cut off long reasoning
-  outputs. These show up as `error` or `truncated`, never as `wrong`.
+- **Free-tier quotas.** The Gemini free tier allows **20 requests per day per model** (as of
+  Nov 2026), so the 36 Gemini 3.8 Flash answers were collected over several days using the
+  runner's resume feature. Groq's per-minute token limits can block or cut off long reasoning
+  outputs. Quota problems show up as `error` or `truncated` and are re-run, never counted as `wrong`.
 - **Small task set.** 12 tasks × 3 samples gives a directional signal, not tight confidence
   intervals. The task generator makes it easy to add more configurations.
 - **Scope.** Downlink PDSCH, FR1, single-symbol DM-RS, PDSCH mapping type A, no
