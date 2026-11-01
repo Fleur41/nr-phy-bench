@@ -36,6 +36,6 @@ against the spec, runs the eval with their own API keys, records the video, and 
    - Free models in use: Gemini (free tier; 3.1 Pro not available free), Groq (TPM limits too tight), GitHub Models (retired 2026-07-30, removed). Paid Anthropic/OpenAI optional
 3. 🔄 12 tasks (4 L1, 3 L2, 3 L3, 2 L4 LBRM). Gemini 3.8 Flash solved L1-L3 in early samples, so L4 (LBRM k0) was added. Owner must verify tables in reference/nr_config.py and ldpc.py (Table 5.4.2.1-1)
    - Final runs (resumable with --out): results/raw/gemini-3.8-flash_L1-L2.jsonl, gemini-3.8-flash_L3-L4.jsonl, gemma-4-31b.jsonl, gpt-oss-120b.jsonl. Settings: effort high, 65k max tokens, 900s timeout. Exploratory runs in results/pilot/. Avoid >2 concurrent processes per free Gemini key (stalls)
-   - QUOTA: Gemini 3.8 Flash free tier = 20 requests/day/model (resets ~08:00 EAT). Flash quota used up on Nov 1 with 4/36 done. Resume L3-L4 file first on Nov 2, then L1-L2; expected done Nov 3
+   - QUOTA: Gemini 3.8 Flash free tier = 20 requests/day/model (resets ~08:00 UTC = 11:00 EAT). Flash quota used up on Nov 1 with 4/36 done. Resume L3-L4 file first on Nov 2, then L1-L2; expected done Nov 3
 4. run_eval.py + grade.py, full run, results table
 5. README, video script, final zip
