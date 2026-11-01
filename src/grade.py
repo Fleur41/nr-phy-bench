@@ -43,10 +43,11 @@ def extract_answer(text: str):
     return int(re.sub(r"[,   ]", "", m.group(0)))
 
 
-def grade_file(raw_path: Path) -> tuple[list[dict], dict]:
+def grade_file(*raw_paths: Path) -> tuple[list[dict], dict]:
     golden = {t["id"]: t["answer"] for t in json.loads(TASKS.read_text())}
     rows = []
-    for line in raw_path.read_text().splitlines():
+    lines = [ln for p in raw_paths for ln in p.read_text().splitlines() if ln.strip()]
+    for line in lines:
         rec = json.loads(line)
         if rec.get("error"):
             status, parsed = "error", None
@@ -95,11 +96,12 @@ def to_markdown(rows: list[dict], summary: dict) -> str:
 
 def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("raw", type=Path, help="results/raw/<run>.jsonl")
+    ap.add_argument("raw", type=Path, nargs="+", help="one or more results/raw/<run>.jsonl")
+    ap.add_argument("--name", help="report name (default: the single input file's name)")
     args = ap.parse_args()
 
-    rows, summary = grade_file(args.raw)
-    stem = args.raw.stem
+    rows, summary = grade_file(*args.raw)
+    stem = args.name or (args.raw[0].stem if len(args.raw) == 1 else "combined")
     scores_dir = ROOT / "results" / "scores"
     scores_dir.mkdir(parents=True, exist_ok=True)
     (scores_dir / f"{stem}.json").write_text(json.dumps(rows, indent=2) + "\n")

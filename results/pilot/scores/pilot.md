@@ -1,0 +1,13 @@
+| Model | Correct | Wrong | No answer | Truncated | Error | Accuracy |
+|---|---|---|---|---|---|---|
+| gemini:gemini-3.1-pro-preview | 0 | 0 | 0 | 0 | 4 | 0% |
+| gemini:gemini-3.8-flash | 4 | 0 | 0 | 0 | 0 | 100% |
+| groq:openai/gpt-oss-120b | 0 | 2 | 0 | 5 | 1 | 0% |
+| groq:qwen/qwen3.8-27b | 0 | 0 | 0 | 1 | 3 | 0% |
+
+| Task | Expected | gemini:gemini-3.1-pro-preview | gemini:gemini-3.8-flash | groq:openai/gpt-oss-120b | groq:qwen/qwen3.8-27b |
+|---|---|---|---|---|---|
+| ldpc-filler-bits-bg2-large-tb | 96 | error | ✅ | truncated, ❌ 984 | error |
+| tbs-156-cap | 54296 | error | ✅ | truncated, truncated | truncated |
+| tbs-256qam-xoverhead | 143400 | error | ✅ | truncated, error | error |
+| tbs-low-rate-segmentation | 59496 | error | ✅ | truncated, ❌ 57856 | error |

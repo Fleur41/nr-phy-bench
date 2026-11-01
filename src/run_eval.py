@@ -4,8 +4,8 @@
     python -m src.run_eval --models gemini:<model-id> anthropic:claude-opus-5-5
     python -m src.run_eval --dry-run          # print prompts, no API calls
 
-Output: results/raw/<timestamp>.jsonl (one line per task x model x sample).
-Then grade with:  python -m src.grade results/raw/<timestamp>.jsonl
+Output: results/raw/<timestamp>[_<tag>].jsonl (one line per task x model x sample).
+Then grade with:  python -m src.grade results/raw/<file>.jsonl [more files ...] --name <report>
 """
 from __future__ import annotations
 
@@ -21,24 +21,33 @@ ROOT = Path(__file__).resolve().parent.parent
 TASKS = ROOT / "tasks" / "tasks.json"
 RAW_DIR = ROOT / "results" / "raw"
 
-DEFAULT_MODELS = ["anthropic:claude-opus-5-5", "anthropic:claude-sonnet-5-5", "openai:gpt-5"]
+# Free-tier lineup used for the published results (see README > Limitations).
+DEFAULT_MODELS = ["gemini:gemini-3.8-flash", "gemini:gemma-4-31b-it", "groq:openai/gpt-oss-120b"]
 EFFORT = "high"  # same reasoning-effort label for every provider, recorded in the output
-MAX_OUTPUT_TOKENS = 32000
+# Thinking tokens count against this limit on some providers (e.g. Gemini), so it must
+# be generous: a 32k limit cut off a correct Gemini answer before its FINAL ANSWER line.
+MAX_OUTPUT_TOKENS = 65536
+FALLBACK_OUTPUT_TOKENS = 32000  # for models whose maximum output is lower
 RATE_LIMIT_RETRIES = 3  # free tiers have per-minute quotas; wait and retry
 RATE_LIMIT_WAIT_S = 65
 
 
 def with_rate_limit_retry(call, model: str, prompt: str) -> dict:
-    """Retry on HTTP 429, unless the request itself is too large for the quota."""
+    """Retry on per-minute quota errors (HTTP 429, or Groq's 413 'request too large').
+
+    Groq's 'too large' estimate depends on recent usage, so it is retried once after
+    the window resets; if it fails again the request genuinely exceeds the quota.
+    """
     for attempt in range(RATE_LIMIT_RETRIES + 1):
         try:
             return call(model, prompt)
         except Exception as e:
-            is_429 = getattr(e, "status_code", None) == 429
+            status = getattr(e, "status_code", None)
             too_large = "request too large" in str(e).lower()
-            if not is_429 or too_large or attempt == RATE_LIMIT_RETRIES:
+            retryable = status == 429 or (status == 413 and too_large)
+            if not retryable or attempt == RATE_LIMIT_RETRIES or (too_large and attempt >= 1):
                 raise
-            print(f"(429, waiting {RATE_LIMIT_WAIT_S}s)", end=" ", flush=True)
+            print(f"({status}, waiting {RATE_LIMIT_WAIT_S}s)", end=" ", flush=True)
             time.sleep(RATE_LIMIT_WAIT_S)
 
 
@@ -110,13 +119,22 @@ def make_compatible_caller(provider: str):
         client = _compatible_client(provider)
         # Set the output limit explicitly: provider defaults (e.g. Groq's) are small
         # enough to cut a reasoning model off mid-working, which would be a false fail.
-        kwargs = dict(model=model, messages=[{"role": "user", "content": prompt}],
-                      max_tokens=MAX_OUTPUT_TOKENS)
-        try:
-            resp = client.chat.completions.create(**kwargs, reasoning_effort=EFFORT)
-        except openai.BadRequestError:
-            # Models without a reasoning mode reject reasoning_effort.
-            resp = client.chat.completions.create(**kwargs)
+        base = dict(model=model, messages=[{"role": "user", "content": prompt}])
+        # Try the most generous settings first; fall back when a model rejects them
+        # (no reasoning mode, or a lower maximum output). The settings used are recorded.
+        attempts = [
+            dict(max_tokens=MAX_OUTPUT_TOKENS, reasoning_effort=EFFORT),
+            dict(max_tokens=MAX_OUTPUT_TOKENS),
+            dict(max_tokens=FALLBACK_OUTPUT_TOKENS, reasoning_effort=EFFORT),
+            dict(max_tokens=FALLBACK_OUTPUT_TOKENS),
+        ]
+        for i, extra in enumerate(attempts):
+            try:
+                resp = client.chat.completions.create(**base, **extra)
+                break
+            except openai.BadRequestError:
+                if i == len(attempts) - 1:
+                    raise
         choice = resp.choices[0]
         usage = resp.usage
         return {
@@ -125,6 +143,7 @@ def make_compatible_caller(provider: str):
             "usage": {"input_tokens": getattr(usage, "prompt_tokens", None),
                       "output_tokens": getattr(usage, "completion_tokens", None)},
             "request_id": resp.id,
+            "settings": extra,
         }
     return call
 
@@ -154,6 +173,7 @@ def main() -> None:
     ap.add_argument("--samples", type=int, default=1, help="answers per task per model")
     ap.add_argument("--tasks", nargs="*", help="only run these task ids")
     ap.add_argument("--dry-run", action="store_true", help="print prompts, make no API calls")
+    ap.add_argument("--tag", default="", help="suffix for the output file name, e.g. gemini-flash")
     ap.add_argument("--list-models", metavar="PROVIDER", choices=sorted(PROVIDERS),
                     help="print the model ids your key can use, then exit")
     args = ap.parse_args()
@@ -174,7 +194,7 @@ def main() -> None:
 
     RAW_DIR.mkdir(parents=True, exist_ok=True)
     stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
-    out_path = RAW_DIR / f"{stamp}.jsonl"
+    out_path = RAW_DIR / (f"{stamp}_{args.tag}.jsonl" if args.tag else f"{stamp}.jsonl")
 
     with out_path.open("w") as f:
         for spec in args.models:
