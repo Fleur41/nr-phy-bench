@@ -29,6 +29,15 @@
   {
     "task_id": "tbs-156-cap",
     "level": 1,
+    "model": "gemini:gemma-4-31b-it",
+    "sample": 1,
+    "expected": 54296,
+    "parsed": null,
+    "status": "error"
+  },
+  {
+    "task_id": "tbs-156-cap",
+    "level": 1,
     "model": "groq:openai/gpt-oss-120b",
     "sample": 0,
     "expected": 54296,
@@ -69,6 +78,15 @@
     "sample": 1,
     "expected": 59496,
     "parsed": 61440,
+    "status": "wrong"
+  },
+  {
+    "task_id": "tbs-low-rate-segmentation",
+    "level": 1,
+    "model": "groq:openai/gpt-oss-120b",
+    "sample": 2,
+    "expected": 59496,
+    "parsed": 73632,
     "status": "wrong"
   },
   {

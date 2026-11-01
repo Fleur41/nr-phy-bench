@@ -111,8 +111,8 @@ python -m src.run_eval --dry-run   # print every prompt with its golden answer, 
 ```bash
 cp .env.example .env               # then add the key(s) for the providers you use
 python -m src.run_eval --list-models gemini                  # model ids your key can use
-python -m src.run_eval --models gemini:gemini-3.8-flash --samples 3 --tag flash
-python -m src.grade results/raw/<file>.jsonl                 # or several files with --name
+python -m src.run_eval --models gemini:gemini-3.8-flash --samples 3 --out results/raw/flash.jsonl
+python -m src.grade results/raw/*.jsonl --name final         # grade one or many files
 ```
 
 Supported providers (`provider:model`):
@@ -126,7 +126,14 @@ Supported providers (`provider:model`):
 | `openai` | `OPENAI_API_KEY` | Paid |
 
 Every model gets the same prompt, `reasoning effort = high` where the provider supports it,
-and a 65,536-token output limit (falling back to 32,000 for models with a lower maximum; the settings used are recorded with each response). Per-minute quota errors are retried automatically.
+and a 65,536-token output limit (falling back to 32,000 for models with a lower maximum; the settings used are recorded with each response).
+
+Free tiers are slow and sometimes unreliable, so the runner:
+- retries per-minute quota errors (429), timeouts, dropped connections and 5xx errors with bounded retries,
+- stops any single request after 15 minutes,
+- **resumes** with `--out`: if the file exists, finished answers are kept and only missing or failed
+  ones (`error`, `truncated`) are re-run. An interrupted run is never wasted, and failures caused by
+  the infrastructure are retried instead of being counted against the model.
 
 ## Results
 

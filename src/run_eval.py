@@ -30,31 +30,55 @@ MAX_OUTPUT_TOKENS = 65536
 FALLBACK_OUTPUT_TOKENS = 32000  # for models whose maximum output is lower
 RATE_LIMIT_RETRIES = 3  # free tiers have per-minute quotas; wait and retry
 RATE_LIMIT_WAIT_S = 65
+# Hard per-request timeout. Without it a stalled free-tier connection hung for ~100 min.
+# The slowest genuine answer observed (Gemini Flash, high effort) took ~8.5 min.
+REQUEST_TIMEOUT_S = 900
+TRANSIENT_RETRIES = 2  # timeouts, 5xx, dropped connections
+TRANSIENT_WAIT_S = 30
+
+
+def _is_transient(e: Exception) -> bool:
+    """Timeouts, dropped connections and 5xx server errors (any provider SDK)."""
+    name = type(e).__name__
+    status = getattr(e, "status_code", None)
+    return ("Timeout" in name or "Connection" in name
+            or (isinstance(status, int) and status >= 500))
 
 
 def with_rate_limit_retry(call, model: str, prompt: str) -> dict:
-    """Retry on per-minute quota errors (HTTP 429, or Groq's 413 'request too large').
+    """Retry quota errors and transient failures; anything else is raised immediately.
 
-    Groq's 'too large' estimate depends on recent usage, so it is retried once after
-    the window resets; if it fails again the request genuinely exceeds the quota.
+    - HTTP 429, or Groq's 413 'request too large' (its estimate depends on recent usage,
+      so it is retried once after the window resets): wait RATE_LIMIT_WAIT_S.
+    - Timeouts, dropped connections, 5xx: wait TRANSIENT_WAIT_S, at most TRANSIENT_RETRIES.
     """
-    for attempt in range(RATE_LIMIT_RETRIES + 1):
+    quota_tries = transient_tries = 0
+    while True:
         try:
             return call(model, prompt)
         except Exception as e:
             status = getattr(e, "status_code", None)
             too_large = "request too large" in str(e).lower()
-            retryable = status == 429 or (status == 413 and too_large)
-            if not retryable or attempt == RATE_LIMIT_RETRIES or (too_large and attempt >= 1):
+            if status == 429 or (status == 413 and too_large):
+                quota_tries += 1
+                if quota_tries > RATE_LIMIT_RETRIES or (too_large and quota_tries > 1):
+                    raise
+                wait = RATE_LIMIT_WAIT_S
+            elif _is_transient(e):
+                transient_tries += 1
+                if transient_tries > TRANSIENT_RETRIES:
+                    raise
+                wait = TRANSIENT_WAIT_S
+            else:
                 raise
-            print(f"({status}, waiting {RATE_LIMIT_WAIT_S}s)", end=" ", flush=True)
-            time.sleep(RATE_LIMIT_WAIT_S)
+            print(f"({status or type(e).__name__}, waiting {wait}s)", end=" ", flush=True)
+            time.sleep(wait)
 
 
 def call_anthropic(model: str, prompt: str) -> dict:
     import anthropic
 
-    client = anthropic.Anthropic()
+    client = anthropic.Anthropic(timeout=REQUEST_TIMEOUT_S, max_retries=0)
     # Streaming avoids HTTP timeouts on long reasoning. No refusal fallback is
     # configured on purpose: a fallback would silently answer with a different
     # model and corrupt the per-model scores. Refusals are recorded instead.
@@ -77,7 +101,7 @@ def call_anthropic(model: str, prompt: str) -> dict:
 def call_openai(model: str, prompt: str) -> dict:
     import openai
 
-    client = openai.OpenAI()
+    client = openai.OpenAI(timeout=REQUEST_TIMEOUT_S, max_retries=0)
     try:
         resp = client.responses.create(model=model, input=prompt, reasoning={"effort": EFFORT})
     except openai.BadRequestError:
@@ -109,7 +133,8 @@ def _compatible_client(provider: str):
     key = os.environ.get(env_var)
     if not key:
         raise RuntimeError(f"{env_var} is not set in .env")
-    return openai.OpenAI(base_url=base_url, api_key=key)
+    return openai.OpenAI(base_url=base_url, api_key=key,
+                         timeout=REQUEST_TIMEOUT_S, max_retries=0)
 
 
 def make_compatible_caller(provider: str):
@@ -161,7 +186,7 @@ def list_models(provider: str) -> None:
         client = openai.OpenAI()
     else:
         import anthropic
-        client = anthropic.Anthropic()
+        client = anthropic.Anthropic(timeout=REQUEST_TIMEOUT_S, max_retries=0)
     for m in sorted(m.id for m in client.models.list()):
         print(f"{provider}:{m}")
 
@@ -174,6 +199,9 @@ def main() -> None:
     ap.add_argument("--tasks", nargs="*", help="only run these task ids")
     ap.add_argument("--dry-run", action="store_true", help="print prompts, make no API calls")
     ap.add_argument("--tag", default="", help="suffix for the output file name, e.g. gemini-flash")
+    ap.add_argument("--out", type=Path,
+                    help="output file; if it exists, finished answers are kept and only "
+                         "missing or failed (error/truncated) ones are re-run")
     ap.add_argument("--list-models", metavar="PROVIDER", choices=sorted(PROVIDERS),
                     help="print the model ids your key can use, then exit")
     args = ap.parse_args()
@@ -193,15 +221,36 @@ def main() -> None:
         return
 
     RAW_DIR.mkdir(parents=True, exist_ok=True)
-    stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
-    out_path = RAW_DIR / (f"{stamp}_{args.tag}.jsonl" if args.tag else f"{stamp}.jsonl")
+    if args.out:
+        out_path = args.out if args.out.is_absolute() else ROOT / args.out
+    else:
+        stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+        out_path = RAW_DIR / (f"{stamp}_{args.tag}.jsonl" if args.tag else f"{stamp}.jsonl")
+
+    # Resume: keep finished answers, drop failed ones so they are re-run.
+    kept, done = [], set()
+    if out_path.exists():
+        for line in out_path.read_text().splitlines():
+            if not line.strip():
+                continue
+            rec = json.loads(line)
+            failed = rec.get("error") or rec.get("stop_reason") in ("length", "max_tokens", "incomplete")
+            if not failed:
+                kept.append(line)
+                done.add((rec["model"], rec["task_id"], rec["sample"]))
+        print(f"Resuming {out_path.name}: keeping {len(kept)} finished answers")
 
     with out_path.open("w") as f:
+        for line in kept:
+            f.write(line + "\n")
+        f.flush()
         for spec in args.models:
             provider, model = spec.split(":", 1)
             call = PROVIDERS[provider]
             for t in tasks:
                 for s in range(args.samples):
+                    if (spec, t["id"], s) in done:
+                        continue
                     print(f"{spec:35s} {t['id']:35s} sample {s} ...", end=" ", flush=True)
                     rec = {"task_id": t["id"], "model": spec, "sample": s, "effort": EFFORT}
                     start = time.time()
