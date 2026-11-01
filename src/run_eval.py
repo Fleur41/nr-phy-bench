@@ -136,6 +136,19 @@ PROVIDERS = {"anthropic": call_anthropic, "openai": call_openai,
 
 def list_models(provider: str) -> None:
     load_dotenv(ROOT / ".env")
+    if provider == "github":
+        # GitHub Models publishes its list at a separate catalog endpoint.
+        import os
+        import urllib.request
+
+        req = urllib.request.Request(
+            "https://models.github.ai/catalog/models",
+            headers={"Authorization": f"Bearer {os.environ.get('GITHUB_TOKEN', '')}",
+                     "Accept": "application/vnd.github+json"})
+        with urllib.request.urlopen(req, timeout=30) as r:
+            for m in sorted(json.load(r), key=lambda m: m["id"]):
+                print(f"github:{m['id']}")
+        return
     if provider in COMPATIBLE:
         client = _compatible_client(provider)
     elif provider == "openai":

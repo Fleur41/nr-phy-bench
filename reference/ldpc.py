@@ -66,3 +66,29 @@ def segment(tbs: int, base_graph: int) -> dict:
         "A": tbs, "TB_CRC": tb_crc, "B": B, "L": L, "C": C, "B_prime": B_prime,
         "K_prime": k_prime, "Kb": kb, "Zc": zc, "K": K, "filler_bits": K - k_prime,
     }
+
+
+def rate_match_lengths(G: int, C: int, num_layers: int, qm: int) -> list[int]:
+    """E_r for every code block, TS 38.212 5.4.2.1 (all C code blocks scheduled, C' = C).
+
+    The first C' - mod(G/(NL*Qm), C') blocks get the floor size, the rest the ceil size.
+    """
+    unit = num_layers * qm
+    assert G % unit == 0
+    symbols = G // unit
+    n_small = C - symbols % C
+    small = unit * (symbols // C)
+    large = unit * -(-symbols // C)
+    return [small if j < n_small else large for j in range(C)]
+
+
+# TS 38.212 Table 5.4.2.1-2: k0 numerators (BG1 over 66*Zc, BG2 over 50*Zc)
+_K0_NUM = {1: (0, 17, 33, 56), 2: (0, 13, 25, 43)}
+
+
+def circular_buffer_k0(base_graph: int, zc: int, rv: int, n_cb: int | None = None) -> int:
+    """Starting position k0 in the circular buffer. Without limited-buffer rate
+    matching, N_cb = N = 66*Zc (BG1) or 50*Zc (BG2)."""
+    n = (66 if base_graph == 1 else 50) * zc
+    n_cb = n if n_cb is None else n_cb
+    return (_K0_NUM[base_graph][rv] * n_cb // n) * zc

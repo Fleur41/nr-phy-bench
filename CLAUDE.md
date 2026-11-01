@@ -22,7 +22,8 @@ against the spec, runs the eval with their own API keys, records the video, and 
 - Judges check: reproducibility from README alone, no false passes / false fails in grading.
 
 ## Layout
-- `reference/` — golden-answer calculators (`tbs.py`: TS 38.214 §5.1.3.2; `ldpc.py`: TS 38.212 §5.2.2, §7.2.2)
+- `reference/` — golden-answer calculators (`tbs.py`: TS 38.214 §5.1.3.2; `ldpc.py`: TS 38.212 §5.2.2, §5.4.2.1, §7.2.2; `nr_config.py`: N_RB from TS 38.101-1, DM-RS overhead from TS 38.211 §7.4.1.1.2)
+- `src/build_tasks.py` — generates `tasks/tasks.json`; levels: L1 explicit inputs, L2 derived from config, L3 derived + chained (LDPC / rate matching)
 - `tests/` — sanity tests for the reference code (`python -m pytest -q`)
 - `tasks/tasks.json` — the eval tasks (prompt, golden answer, spec reference)
 - `src/run_eval.py` — queries models (Anthropic, OpenAI, plus free OpenAI-compatible: Gemini, GitHub Models, OpenRouter, Groq), saves raw outputs to `results/`
@@ -31,7 +32,8 @@ against the spec, runs the eval with their own API keys, records the video, and 
 
 ## Plan
 1. ✅ Skeleton + reference calculators + tests
-2. 🔄 Pilot (4 tasks built via `python -m src.build_tasks`): 3–4 tasks against models. If models ace them, switch to backup "RF-LinkBench" (link budgets / dB traps)
-3. Write 5–10 final tasks, calibrate difficulty
+2. ✅ Pilot (Nov 1): Gemini 3.8 Flash 4/4 on L1, gpt-oss-120b failed (fell for BG1 trap). Decision: keep NR-PHY-Bench, add harder L2/L3 tasks
+   - Free models in use: Gemini (free tier; 3.1 Pro not available free), Groq (TPM limits too tight), GitHub Models (pending token). Paid Anthropic/OpenAI optional
+3. 🔄 10 tasks built (4 L1, 3 L2, 3 L3); calibrating against Gemini 3.8 Flash. Owner must verify tables in reference/nr_config.py
 4. run_eval.py + grade.py, full run, results table
 5. README, video script, final zip
