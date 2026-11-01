@@ -1,4 +1,7 @@
+# Secrets: never commit
 .env
+
+# Local environment and caches
 .venv/
 venv/
 __pycache__/
@@ -6,4 +9,6 @@ __pycache__/
 .pytest_cache/
 .DS_Store
 .vscode/
-.env.example
+
+# Private notes (video script etc.)
+notes/
