@@ -1,0 +1,34 @@
+[
+  {
+    "task_id": "tbs-156-cap",
+    "model": "groq:openai/gpt-oss-120b",
+    "sample": 0,
+    "expected": 54296,
+    "parsed": null,
+    "status": "truncated"
+  },
+  {
+    "task_id": "tbs-low-rate-segmentation",
+    "model": "groq:openai/gpt-oss-120b",
+    "sample": 0,
+    "expected": 59496,
+    "parsed": 57856,
+    "status": "wrong"
+  },
+  {
+    "task_id": "tbs-256qam-xoverhead",
+    "model": "groq:openai/gpt-oss-120b",
+    "sample": 0,
+    "expected": 143400,
+    "parsed": null,
+    "status": "error"
+  },
+  {
+    "task_id": "ldpc-filler-bits-bg2-large-tb",
+    "model": "groq:openai/gpt-oss-120b",
+    "sample": 0,
+    "expected": 96,
+    "parsed": 984,
+    "status": "wrong"
+  }
+]

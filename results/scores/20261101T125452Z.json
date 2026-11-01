@@ -1,0 +1,130 @@
+[
+  {
+    "task_id": "tbs-156-cap",
+    "model": "gemini:gemini-3.1-pro-preview",
+    "sample": 0,
+    "expected": 54296,
+    "parsed": null,
+    "status": "error"
+  },
+  {
+    "task_id": "tbs-low-rate-segmentation",
+    "model": "gemini:gemini-3.1-pro-preview",
+    "sample": 0,
+    "expected": 59496,
+    "parsed": null,
+    "status": "error"
+  },
+  {
+    "task_id": "tbs-256qam-xoverhead",
+    "model": "gemini:gemini-3.1-pro-preview",
+    "sample": 0,
+    "expected": 143400,
+    "parsed": null,
+    "status": "error"
+  },
+  {
+    "task_id": "ldpc-filler-bits-bg2-large-tb",
+    "model": "gemini:gemini-3.1-pro-preview",
+    "sample": 0,
+    "expected": 96,
+    "parsed": null,
+    "status": "error"
+  },
+  {
+    "task_id": "tbs-156-cap",
+    "model": "gemini:gemini-3.8-flash",
+    "sample": 0,
+    "expected": 54296,
+    "parsed": 54296,
+    "status": "correct"
+  },
+  {
+    "task_id": "tbs-low-rate-segmentation",
+    "model": "gemini:gemini-3.8-flash",
+    "sample": 0,
+    "expected": 59496,
+    "parsed": 59496,
+    "status": "correct"
+  },
+  {
+    "task_id": "tbs-256qam-xoverhead",
+    "model": "gemini:gemini-3.8-flash",
+    "sample": 0,
+    "expected": 143400,
+    "parsed": 143400,
+    "status": "correct"
+  },
+  {
+    "task_id": "ldpc-filler-bits-bg2-large-tb",
+    "model": "gemini:gemini-3.8-flash",
+    "sample": 0,
+    "expected": 96,
+    "parsed": 96,
+    "status": "correct"
+  },
+  {
+    "task_id": "tbs-156-cap",
+    "model": "groq:openai/gpt-oss-120b",
+    "sample": 0,
+    "expected": 54296,
+    "parsed": null,
+    "status": "truncated"
+  },
+  {
+    "task_id": "tbs-low-rate-segmentation",
+    "model": "groq:openai/gpt-oss-120b",
+    "sample": 0,
+    "expected": 59496,
+    "parsed": null,
+    "status": "truncated"
+  },
+  {
+    "task_id": "tbs-256qam-xoverhead",
+    "model": "groq:openai/gpt-oss-120b",
+    "sample": 0,
+    "expected": 143400,
+    "parsed": null,
+    "status": "truncated"
+  },
+  {
+    "task_id": "ldpc-filler-bits-bg2-large-tb",
+    "model": "groq:openai/gpt-oss-120b",
+    "sample": 0,
+    "expected": 96,
+    "parsed": null,
+    "status": "truncated"
+  },
+  {
+    "task_id": "tbs-156-cap",
+    "model": "groq:qwen/qwen3.8-27b",
+    "sample": 0,
+    "expected": 54296,
+    "parsed": null,
+    "status": "truncated"
+  },
+  {
+    "task_id": "tbs-low-rate-segmentation",
+    "model": "groq:qwen/qwen3.8-27b",
+    "sample": 0,
+    "expected": 59496,
+    "parsed": null,
+    "status": "error"
+  },
+  {
+    "task_id": "tbs-256qam-xoverhead",
+    "model": "groq:qwen/qwen3.8-27b",
+    "sample": 0,
+    "expected": 143400,
+    "parsed": null,
+    "status": "error"
+  },
+  {
+    "task_id": "ldpc-filler-bits-bg2-large-tb",
+    "model": "groq:qwen/qwen3.8-27b",
+    "sample": 0,
+    "expected": 96,
+    "parsed": null,
+    "status": "error"
+  }
+]

@@ -7,6 +7,8 @@ Each response is classified as:
   wrong        - parsed integer differs
   no_answer    - no parseable "FINAL ANSWER: <integer>" line (reported separately,
                  so formatting failures are never confused with wrong maths)
+  truncated    - no answer because the output hit the token limit (a harness or
+                 quota limit, not a model mistake; such runs should be re-run)
   error        - the API call itself failed
 """
 from __future__ import annotations
@@ -19,6 +21,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 TASKS = ROOT / "tasks" / "tasks.json"
+# stop/finish reasons meaning "ran out of output tokens" across providers
+TRUNCATION_REASONS = {"length", "max_tokens", "incomplete"}
 
 _FINAL_RE = re.compile(r"FINAL\s+ANSWER\s*[:=]\s*(.+)", re.IGNORECASE)
 # Digit groups may be separated by commas, spaces or thin spaces: 1,081,512 / 1 081 512
@@ -49,7 +53,8 @@ def grade_file(raw_path: Path) -> tuple[list[dict], dict]:
         else:
             parsed = extract_answer(rec.get("response", ""))
             if parsed is None:
-                status = "no_answer"
+                cut_off = rec.get("stop_reason") in TRUNCATION_REASONS
+                status = "truncated" if cut_off else "no_answer"
             else:
                 status = "correct" if parsed == golden[rec["task_id"]] else "wrong"
         rows.append({
@@ -67,13 +72,13 @@ def grade_file(raw_path: Path) -> tuple[list[dict], dict]:
 def to_markdown(rows: list[dict], summary: dict) -> str:
     models = sorted(summary)
     task_ids = sorted({r["task_id"] for r in rows})
-    out = ["| Model | Correct | Wrong | No answer | Error | Accuracy |",
-           "|---|---|---|---|---|---|"]
+    out = ["| Model | Correct | Wrong | No answer | Truncated | Error | Accuracy |",
+           "|---|---|---|---|---|---|---|"]
     for m in models:
         s = summary[m]
         acc = s["correct"] / s["total"] if s["total"] else 0
         out.append(f"| {m} | {s['correct']} | {s['wrong']} | {s['no_answer']} | "
-                   f"{s['error']} | {acc:.0%} |")
+                   f"{s['truncated']} | {s['error']} | {acc:.0%} |")
     out += ["", "| Task | Expected | " + " | ".join(models) + " |",
             "|---|---|" + "---|" * len(models)]
     for tid in task_ids:

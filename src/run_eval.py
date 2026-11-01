@@ -23,6 +23,23 @@ RAW_DIR = ROOT / "results" / "raw"
 
 DEFAULT_MODELS = ["anthropic:claude-opus-5-5", "anthropic:claude-sonnet-5-5", "openai:gpt-5"]
 EFFORT = "high"  # same reasoning-effort label for every provider, recorded in the output
+MAX_OUTPUT_TOKENS = 32000
+RATE_LIMIT_RETRIES = 3  # free tiers have per-minute quotas; wait and retry
+RATE_LIMIT_WAIT_S = 65
+
+
+def with_rate_limit_retry(call, model: str, prompt: str) -> dict:
+    """Retry on HTTP 429, unless the request itself is too large for the quota."""
+    for attempt in range(RATE_LIMIT_RETRIES + 1):
+        try:
+            return call(model, prompt)
+        except Exception as e:
+            is_429 = getattr(e, "status_code", None) == 429
+            too_large = "request too large" in str(e).lower()
+            if not is_429 or too_large or attempt == RATE_LIMIT_RETRIES:
+                raise
+            print(f"(429, waiting {RATE_LIMIT_WAIT_S}s)", end=" ", flush=True)
+            time.sleep(RATE_LIMIT_WAIT_S)
 
 
 def call_anthropic(model: str, prompt: str) -> dict:
@@ -92,13 +109,15 @@ def make_compatible_caller(provider: str):
         import openai
 
         client = _compatible_client(provider)
-        messages = [{"role": "user", "content": prompt}]
+        # Set the output limit explicitly: provider defaults (e.g. Groq's) are small
+        # enough to cut a reasoning model off mid-working, which would be a false fail.
+        kwargs = dict(model=model, messages=[{"role": "user", "content": prompt}],
+                      max_tokens=MAX_OUTPUT_TOKENS)
         try:
-            resp = client.chat.completions.create(
-                model=model, messages=messages, reasoning_effort=EFFORT)
+            resp = client.chat.completions.create(**kwargs, reasoning_effort=EFFORT)
         except openai.BadRequestError:
             # Models without a reasoning mode reject reasoning_effort.
-            resp = client.chat.completions.create(model=model, messages=messages)
+            resp = client.chat.completions.create(**kwargs)
         choice = resp.choices[0]
         usage = resp.usage
         return {
@@ -168,7 +187,7 @@ def main() -> None:
                     rec = {"task_id": t["id"], "model": spec, "sample": s, "effort": EFFORT}
                     start = time.time()
                     try:
-                        rec.update(call(model, t["prompt"]))
+                        rec.update(with_rate_limit_retry(call, model, t["prompt"]))
                         print("done")
                     except Exception as e:  # record and continue; graded as "error"
                         rec["error"] = f"{type(e).__name__}: {e}"
