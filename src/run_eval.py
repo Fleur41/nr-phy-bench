@@ -1,6 +1,7 @@
 """Send every task to every model and save the raw responses.
 
-    python -m src.run_eval --models anthropic:claude-opus-5-5 openai:gpt-5
+    python -m src.run_eval --list-models gemini     # see which model ids you can use
+    python -m src.run_eval --models gemini:<model-id> anthropic:claude-opus-5-5
     python -m src.run_eval --dry-run          # print prompts, no API calls
 
 Output: results/raw/<timestamp>.jsonl (one line per task x model x sample).
@@ -64,7 +65,68 @@ def call_openai(model: str, prompt: str) -> dict:
     }
 
 
-PROVIDERS = {"anthropic": call_anthropic, "openai": call_openai}
+# Free-tier providers that expose an OpenAI-compatible Chat Completions API.
+# provider -> (base_url, env var holding the key)
+COMPATIBLE = {
+    "gemini": ("https://generativelanguage.googleapis.com/v1beta/openai/", "GEMINI_API_KEY"),
+    "github": ("https://models.github.ai/inference", "GITHUB_TOKEN"),
+    "openrouter": ("https://openrouter.ai/api/v1", "OPENROUTER_API_KEY"),
+    "groq": ("https://api.groq.com/openai/v1", "GROQ_API_KEY"),
+}
+
+
+def _compatible_client(provider: str):
+    import os
+
+    import openai
+
+    base_url, env_var = COMPATIBLE[provider]
+    key = os.environ.get(env_var)
+    if not key:
+        raise RuntimeError(f"{env_var} is not set in .env")
+    return openai.OpenAI(base_url=base_url, api_key=key)
+
+
+def make_compatible_caller(provider: str):
+    def call(model: str, prompt: str) -> dict:
+        import openai
+
+        client = _compatible_client(provider)
+        messages = [{"role": "user", "content": prompt}]
+        try:
+            resp = client.chat.completions.create(
+                model=model, messages=messages, reasoning_effort=EFFORT)
+        except openai.BadRequestError:
+            # Models without a reasoning mode reject reasoning_effort.
+            resp = client.chat.completions.create(model=model, messages=messages)
+        choice = resp.choices[0]
+        usage = resp.usage
+        return {
+            "response": choice.message.content or "",
+            "stop_reason": choice.finish_reason,
+            "usage": {"input_tokens": getattr(usage, "prompt_tokens", None),
+                      "output_tokens": getattr(usage, "completion_tokens", None)},
+            "request_id": resp.id,
+        }
+    return call
+
+
+PROVIDERS = {"anthropic": call_anthropic, "openai": call_openai,
+             **{p: make_compatible_caller(p) for p in COMPATIBLE}}
+
+
+def list_models(provider: str) -> None:
+    load_dotenv(ROOT / ".env")
+    if provider in COMPATIBLE:
+        client = _compatible_client(provider)
+    elif provider == "openai":
+        import openai
+        client = openai.OpenAI()
+    else:
+        import anthropic
+        client = anthropic.Anthropic()
+    for m in sorted(m.id for m in client.models.list()):
+        print(f"{provider}:{m}")
 
 
 def main() -> None:
@@ -74,7 +136,13 @@ def main() -> None:
     ap.add_argument("--samples", type=int, default=1, help="answers per task per model")
     ap.add_argument("--tasks", nargs="*", help="only run these task ids")
     ap.add_argument("--dry-run", action="store_true", help="print prompts, make no API calls")
+    ap.add_argument("--list-models", metavar="PROVIDER", choices=sorted(PROVIDERS),
+                    help="print the model ids your key can use, then exit")
     args = ap.parse_args()
+
+    if args.list_models:
+        list_models(args.list_models)
+        return
 
     load_dotenv(ROOT / ".env")
     tasks = json.loads(TASKS.read_text())

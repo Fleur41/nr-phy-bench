@@ -25,7 +25,7 @@ against the spec, runs the eval with their own API keys, records the video, and 
 - `reference/` — golden-answer calculators (`tbs.py`: TS 38.214 §5.1.3.2; `ldpc.py`: TS 38.212 §5.2.2, §7.2.2)
 - `tests/` — sanity tests for the reference code (`python -m pytest -q`)
 - `tasks/tasks.json` — the eval tasks (prompt, golden answer, spec reference)
-- `src/run_eval.py` — queries models (Anthropic, OpenAI), saves raw outputs to `results/`
+- `src/run_eval.py` — queries models (Anthropic, OpenAI, plus free OpenAI-compatible: Gemini, GitHub Models, OpenRouter, Groq), saves raw outputs to `results/`
 - `src/grade.py` — exact numeric grading
 - Deliverables: README.md, requirements.txt, .env.example, results/, video ≤5 min (YouTube/Loom, not in zip)
 
