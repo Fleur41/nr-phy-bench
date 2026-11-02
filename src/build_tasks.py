@@ -138,6 +138,104 @@ CONFIG_TASKS = [
 ]
 
 
+# Level 5 tasks: context rules. The procedure is the same TBS procedure, but HOW the PDSCH
+# was scheduled (DCI format, RNTI, number of codewords) changes which inputs apply,
+# overriding values that are configured for the UE. The model must recognise that.
+CONTEXT_TASKS = [
+    {
+        "id": "ctx-paging-tb-scaling", "level": 5, "question": "tbs",
+        "trap": "Paging (DCI 1_0, P-RNTI): MCS table 1 must be used although qam256 is "
+                "configured; xOverhead is assumed 0 for P-RNTI; S = 0.5 from the TB scaling "
+                "field moves N_info (3819.375) below 3824 into the table branch. Ignoring S "
+                "gives 7552, using the 256QAM table 6912, applying xOverhead 3624, all three "
+                "mistakes 13064",
+        "context": dict(dci_format="1_0", rnti="P-RNTI", tb_scaling_field="01",
+                        configured_mcs_table="qam256", configured_xoverhead=6,
+                        n_prb=48, n_symb_sh=12, n_dmrs_prb=24, mcs_index=9, total_layers=1,
+                        codeword=0),
+    },
+    {
+        "id": "ctx-2cw-7layer-tb2", "level": 5, "question": "tbs",
+        "trap": "7 layers means two codewords; codeword 1 (TB 2) is mapped to ceil(7/2) = 4 "
+                "layers (TS 38.211 Table 7.3.1.3-1) and uses its own I_MCS = 17 (256QAM table). "
+                "7 layers gives 1147488, the 3 layers of codeword 0 gives 491800, TB 1's "
+                "I_MCS 852696; double-symbol DM-RS takes 24 REs/PRB (12 gives 704904)",
+        "context": dict(dci_format="1_1", rnti="C-RNTI", tb_scaling_field=None,
+                        configured_mcs_table="qam256", configured_xoverhead=0,
+                        bandwidth_mhz=100, scs_khz=30, start_symbol=1, length=13,
+                        dmrs_type=1, dmrs_symbols=2, cdm_groups_without_data=2,
+                        mcs_index_tb1=22, mcs_index_tb2=17, total_layers=7, codeword=1),
+    },
+]
+
+
+def solve_context(c: dict) -> dict:
+    """Apply the context rules, then the ordinary TBS procedure."""
+    from reference import context as ctx
+
+    mcs_table = ctx.pdsch_mcs_table(c["dci_format"], c["rnti"], c["configured_mcs_table"])
+    x_oh = ctx.effective_xoverhead(c["rnti"], c["configured_xoverhead"])
+    S = ctx.tb_scaling(c["dci_format"], c["rnti"], c["tb_scaling_field"])
+    layers = ctx.codeword_layers(c["total_layers"])[c["codeword"]]
+    if "n_prb" in c:
+        n_prb, n_symb, n_dmrs = c["n_prb"], c["n_symb_sh"], c["n_dmrs_prb"]
+        mcs_index = c["mcs_index"]
+    else:
+        n_prb = cfg.n_rb(c["scs_khz"], c["bandwidth_mhz"])
+        n_symb = c["length"]
+        n_dmrs = cfg.dmrs_re_per_prb(c["dmrs_type"], c["cdm_groups_without_data"],
+                                     c["dmrs_symbols"])
+        mcs_index = c[f"mcs_index_tb{c['codeword'] + 1}"]
+    tbs, trace = compute_tbs(n_prb, n_symb, n_dmrs, mcs_index, mcs_table, layers, x_oh,
+                             scaling=S, return_trace=True)
+    return {"mcs_table": mcs_table, "N_oh_PRB": x_oh, "S": float(S), "layers": layers,
+            "n_PRB": n_prb, "N_DMRS_PRB": n_dmrs, "I_MCS": mcs_index,
+            "tbs_trace": trace, "tbs": tbs}
+
+
+def context_prompt(t: dict) -> str:
+    c = t["context"]
+    if t["id"] == "ctx-paging-tb-scaling":
+        body = (
+            "A UE in RRC_CONNECTED decodes a paging message on PDSCH:\n"
+            f"- The PDSCH is scheduled by DCI format {c['dci_format']} with "
+            f"CRC scrambled by {c['rnti']}; the DCI field 'TB scaling' = '{c['tb_scaling_field']}'\n"
+            "- For its unicast traffic the UE is configured with PDSCH-Config mcs-Table = "
+            f"{c['configured_mcs_table']} and PDSCH-ServingCellConfig xOverhead = "
+            f"xOh{c['configured_xoverhead']}\n"
+            f"- I_MCS = {c['mcs_index']}, {c['total_layers']} layer, single codeword\n"
+            f"- Allocated PRBs n_PRB = {c['n_prb']}, PDSCH symbols N_symb^sh = "
+            f"{c['n_symb_sh']} (mapping type A)\n"
+            f"- DM-RS REs per PRB N_DMRS^PRB = {c['n_dmrs_prb']} (already includes the "
+            "DM-RS CDM groups without data)\n"
+            "- No PT-RS, CSI-RS, SSB, or rate-matching resources overlap the PDSCH\n\n"
+            "Compute the Transport Block Size (TBS) in bits of this paging PDSCH, following "
+            "TS 38.214 Sections 5.1.3.1 and 5.1.3.2.\n\n"
+        )
+    else:
+        body = (
+            "A UE is scheduled with a single-user MIMO PDSCH:\n"
+            f"- FR1 carrier, channel bandwidth {c['bandwidth_mhz']} MHz, subcarrier spacing "
+            f"{c['scs_khz']} kHz; the PDSCH is allocated over the full maximum transmission "
+            "bandwidth of the carrier (TS 38.101-1)\n"
+            f"- Scheduled by DCI format 1_1 with CRC scrambled by {c['rnti']}; PDSCH-Config "
+            f"mcs-Table = {c['configured_mcs_table']}; xOverhead is not configured\n"
+            f"- {c['total_layers']} layers in total, two transport blocks: transport block 1 "
+            f"has I_MCS = {c['mcs_index_tb1']}, transport block 2 has I_MCS = "
+            f"{c['mcs_index_tb2']}\n"
+            f"- PDSCH mapping type A, dmrs-TypeA-Position = pos2, start symbol S = "
+            f"{c['start_symbol']}, length L = {c['length']} symbols\n"
+            f"- DM-RS: dmrs-Type = type{c['dmrs_type']}, double-symbol front-loaded DM-RS "
+            "(maxLength = len2, 2 DM-RS symbols), dmrs-AdditionalPosition = pos0, number "
+            f"of DM-RS CDM groups without data = {c['cdm_groups_without_data']}\n"
+            "- No PT-RS, CSI-RS, SSB, or rate-matching resources overlap the PDSCH\n\n"
+            "Compute the Transport Block Size (TBS) in bits of transport block 2 "
+            "(codeword 1), following TS 38.211 Section 7.3.1.3 and TS 38.214 Sections "
+            "5.1.3.1 and 5.1.3.2.\n\n"
+        )
+    return "You are a 5G NR physical-layer engineer. " + body + ANSWER_FORMAT
+
+
 def solve_config(c: dict) -> dict:
     """Full reference chain from configuration to every quantity we can ask about."""
     n_prb = cfg.n_rb(c["scs_khz"], c["bandwidth_mhz"])
@@ -276,6 +374,14 @@ def build() -> list[dict]:
             "id": t["id"], "level": t["level"], "category": f"config-{t['question']}",
             "spec": CONFIG_QUESTIONS[t["question"]][1], "trap": t["trap"],
             "params": t["config"], "prompt": config_prompt(t),
+            "answer": sol[t["question"]], "reference_trace": sol,
+        })
+    for t in CONTEXT_TASKS:
+        sol = solve_context(t["context"])
+        tasks.append({
+            "id": t["id"], "level": t["level"], "category": "context-tbs",
+            "spec": "TS 38.214 5.1.3.1, 5.1.3.2; TS 38.211 7.3.1.3", "trap": t["trap"],
+            "params": t["context"], "prompt": context_prompt(t),
             "answer": sol[t["question"]], "reference_trace": sol,
         })
     return tasks

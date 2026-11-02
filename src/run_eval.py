@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import time
 from datetime import datetime, timezone
 from pathlib import Path
@@ -35,6 +36,18 @@ RATE_LIMIT_WAIT_S = 65
 REQUEST_TIMEOUT_S = 900
 TRANSIENT_RETRIES = 2  # timeouts, 5xx, dropped connections
 TRANSIENT_WAIT_S = 30
+
+
+def redact(text: str) -> str:
+    """Remove account identifiers that providers put in error messages (e.g. Groq's
+    'organization `org_...`'), so saved results contain no private account data."""
+    return re.sub(r"\borg_[A-Za-z0-9]+", "org_[redacted]", text)
+
+
+def _max_tokens_cap(message: str) -> int | None:
+    """The output maximum a provider states when rejecting max_tokens, if any."""
+    m = re.search(r"max_tokens.{0,40}?less than or equal to\D{0,3}(\d+)", message)
+    return int(m.group(1)) if m else None
 
 
 def _is_transient(e: Exception) -> bool:
@@ -162,12 +175,22 @@ def make_compatible_caller(provider: str):
             dict(max_tokens=FALLBACK_OUTPUT_TOKENS, reasoning_effort=EFFORT),
             dict(max_tokens=FALLBACK_OUTPUT_TOKENS),
         ]
-        for i, extra in enumerate(attempts):
+        i = 0
+        while True:
+            extra = attempts[i]
             try:
                 resp = client.chat.completions.create(**base, **extra)
                 break
-            except openai.BadRequestError:
-                if i == len(attempts) - 1:
+            except openai.BadRequestError as e:
+                # A model with an even lower output maximum says so (Groq: "`max_tokens`
+                # must be less than or equal to `16384`"): retry at exactly that maximum.
+                cap = _max_tokens_cap(str(e))
+                if cap and cap < extra["max_tokens"] and not any(
+                        a["max_tokens"] == cap for a in attempts):
+                    attempts += [dict(max_tokens=cap, reasoning_effort=EFFORT),
+                                 dict(max_tokens=cap)]
+                i += 1
+                if i == len(attempts):
                     raise
         choice = resp.choices[0]
         usage = resp.usage
@@ -280,7 +303,7 @@ def main() -> None:
                     print("done")
                     quota_failures = rejected = 0
                 except Exception as e:  # record and continue; graded as "error"
-                    rec["error"] = f"{type(e).__name__}: {e}"
+                    rec["error"] = redact(f"{type(e).__name__}: {e}")
                     quota_failures = quota_failures + 1 if getattr(e, "status_code", None) == 429 else 0
                     print(f"ERROR {rec['error'][:120]}")
                     rejected = rejected + 1 if getattr(e, "status_code", None) == 400 else 0

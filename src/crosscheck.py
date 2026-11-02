@@ -38,8 +38,8 @@ TASKS = Path(__file__).resolve().parent.parent / "tasks" / "tasks.json"
 # TS 38.214 Table 5.1.3.1-1 (mcs_table 1) and 5.1.3.1-2 (mcs_table 2): (Qm, R x 1024).
 # Only the rows the tasks use.
 MCS = {
-    1: {2: (2, 193), 15: (4, 616), 16: (4, 658), 19: (6, 517), 20: (6, 567)},
-    2: {20: (8, 682.5), 24: (8, 841), 25: (8, 885), 27: (8, 948)},
+    1: {2: (2, 193), 9: (2, 679), 15: (4, 616), 16: (4, 658), 19: (6, 517), 20: (6, 567)},
+    2: {17: (6, 772), 20: (8, 682.5), 24: (8, 841), 25: (8, 885), 27: (8, 948)},
 }
 MOD = {2: "QPSK", 4: "16QAM", 6: "64QAM", 8: "256QAM"}
 # TS 38.101-1 Table 5.3.2-1: N_RB for (bandwidth MHz, SCS kHz). Only the entries used.
@@ -67,8 +67,36 @@ def dmrs_symbols_type_a(start: int, length: int, add_pos: int) -> int:
     return add_pos + 1
 
 
+def recompute_context(p: dict) -> dict:
+    """L5 context tasks, re-derived here without reference/context.py.
+    TS 38.214 5.1.3.1: the 256QAM table needs mcs-Table = qam256 AND DCI 1_1 with C-RNTI.
+    TS 38.214 5.1.3.2: N_oh^PRB = 0 for SI/RA/MsgB/P-RNTI; S from Table 5.1.3.2-2 for
+    DCI 1_0 with P/RA/MsgB-RNTI. TS 38.211 Table 7.3.1.3-1: codeword 1 of v > 4 layers
+    gets ceil(v/2) layers. The TBS itself comes from py3gpp nrTBS (with tbScaling)."""
+    table = 2 if (p["configured_mcs_table"] == "qam256" and p["dci_format"] == "1_1"
+                  and p["rnti"] == "C-RNTI") else 1
+    x_oh = 0 if p["rnti"] in ("SI-RNTI", "RA-RNTI", "MsgB-RNTI", "P-RNTI") else p["configured_xoverhead"]
+    scaled = p["dci_format"] == "1_0" and p["rnti"] in ("P-RNTI", "RA-RNTI", "MsgB-RNTI")
+    S = {"00": 1, "01": 0.5, "10": 0.25}[p["tb_scaling_field"]] if scaled else 1
+    v = p["total_layers"]
+    layers = v if v <= 4 else [v // 2, (v + 1) // 2][p["codeword"]]
+    if "n_prb" in p:
+        n_prb, n_symb, n_dmrs, i_mcs = p["n_prb"], p["n_symb_sh"], p["n_dmrs_prb"], p["mcs_index"]
+    else:
+        n_prb = N_RB[(p["bandwidth_mhz"], p["scs_khz"])]
+        n_symb = p["length"]
+        n_dmrs = (6 if p["dmrs_type"] == 1 else 4) * p["cdm_groups_without_data"] * p["dmrs_symbols"]
+        i_mcs = p[f"mcs_index_tb{p['codeword'] + 1}"]
+    qm, r1024 = MCS[table][i_mcs]
+    tbs = int(np.atleast_1d(_nrTBS(MOD[qm], layers, n_prb, 12 * n_symb - n_dmrs,
+                                   r1024 / 1024, x_oh, S))[0])
+    return {"tbs": tbs, "layers": layers, "mcs_table": table, "S": float(S), "N_oh_PRB": x_oh}
+
+
 def recompute(params: dict) -> dict:
     """Recompute every quantity the task family can ask for."""
+    if "rnti" in params:
+        return recompute_context(params)
     qm, r1024 = MCS[params["mcs_table"]][params["mcs_index"]]
     rate = r1024 / 1024
 
@@ -117,7 +145,7 @@ def recompute(params: dict) -> dict:
 def asked_quantity(category: str) -> str:
     """Which recomputed quantity a task's answer is, from its category
     (tbs, ldpc, config-tbs, config-filler_bits, config-E_first, config-E_last, config-k0)."""
-    name = category.removeprefix("config-")
+    name = category.removeprefix("config-").removeprefix("context-")
     return {"ldpc": "filler_bits"}.get(name, name)
 
 

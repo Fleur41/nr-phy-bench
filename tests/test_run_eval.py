@@ -129,3 +129,55 @@ def test_repeated_400_stops_model(monkeypatch, tmp_path):
         raise FakeError(400)
     recs = _run_main(monkeypatch, tmp_path, rejected, [])
     assert len(recs) == 1  # first rejection recorded, second stops the model unwritten
+
+
+def test_redact_removes_org_ids():
+    from src.run_eval import redact
+    msg = "RateLimitError: Error code: 429 - Rate limit reached in organization `org_01abcXYZ9` on tokens"
+    out = redact(msg)
+    assert "org_01abcXYZ9" not in out and "org_[redacted]" in out
+    assert redact("InternalServerError: Error code: 503") == "InternalServerError: Error code: 503"
+
+
+def test_max_tokens_cap_parsed_from_groq_message():
+    msg = ("Error code: 400 - `max_tokens` must be less than or equal to `16384`, "
+           "the maximum value for `max_tokens` is less than the `context_window` for this model")
+    assert run_eval._max_tokens_cap(msg) == 16384
+    assert run_eval._max_tokens_cap("Error code: 400 - invalid model") is None
+
+
+def test_compatible_caller_falls_back_to_stated_max_tokens(monkeypatch):
+    import openai
+
+    seen = []
+
+    class Completions:
+        def create(self, **kw):
+            seen.append(kw.get("max_tokens"))
+            if kw["max_tokens"] > 16384:
+                err = openai.BadRequestError.__new__(openai.BadRequestError)
+                Exception.__init__(
+                    err, "Error code: 400 - `max_tokens` must be less than or equal to `16384`")
+                raise err
+
+            class Msg:
+                content = "FINAL ANSWER: 1"
+
+            class Choice:
+                message, finish_reason = Msg(), "stop"
+
+            class Usage:
+                prompt_tokens, completion_tokens = 1, 1
+
+            class Resp:
+                choices, usage, id = [Choice()], Usage(), "r1"
+            return Resp()
+
+    class Client:
+        class chat:
+            completions = Completions()
+
+    monkeypatch.setattr(run_eval, "_compatible_client", lambda provider: Client())
+    out = run_eval.make_compatible_caller("groq")("qwen/qwen3.8-27b", "prompt")
+    assert out["settings"]["max_tokens"] == 16384
+    assert seen[:4] == [65536, 65536, 32000, 32000] and seen[-1] == 16384

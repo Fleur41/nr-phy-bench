@@ -14,7 +14,7 @@ implementation of the spec, so grading is exact: no rubric and no LLM judge.
 
 ## Short description
 
-NR-PHY-Bench is a 12-task eval in **5G NR physical-layer engineering** (3GPP TS 38.211,
+NR-PHY-Bench is a 14-task eval in **5G NR physical-layer engineering** (3GPP TS 38.211,
 38.212, 38.214 and 38.101-1). Each task asks a model to compute one integer that a radio
 engineer derives by following the spec: the transport block size, LDPC base graph, filler
 bits, rate-matching length E, or the limited-buffer redundancy-version start k0. **The gap:**
@@ -69,7 +69,7 @@ model returns a confident but wrong TBS or rate-matching length, the gNB and UE 
 the bit layout and the data cannot be decoded. The error is silent: the explanation sounds
 right, only the number is wrong. An exact-integer benchmark exposes this directly.
 
-12 tasks in four difficulty levels. Each task is built around a specific **trap**: a step
+14 tasks in five difficulty levels. Each task is built around a specific **trap**: a step
 where a plausible mistake produces a different final integer. The trap for each task is
 recorded in `tasks/tasks.json`.
 
@@ -79,6 +79,7 @@ recorded in `tasks/tasks.json`.
 | **L2: derived inputs** | Derive n_PRB from the carrier bandwidth (TS 38.101-1) and the DM-RS overhead from the DM-RS configuration (TS 38.211), then compute the TBS | 3 |
 | **L3: derived and chained** | As L2, then carry the result through LDPC base-graph selection, code-block segmentation or rate matching (TS 38.212) | 3 |
 | **L4: limited buffer rate matching** | As L3, plus a second, hypothetical TBS (TBS_LBRM) to size the circular buffer, then the redundancy-version start position k0 | 2 |
+| **L5: context rules** | Recognise which rules apply from *how* the PDSCH was scheduled (DCI format, RNTI, number of codewords), which overrides the UE's configured values, then compute the TBS (TS 38.214 §5.1.3.1–5.1.3.2, TS 38.211 §7.3.1.3) | 2 |
 
 | Task | Level | Trap |
 |---|---|---|
@@ -94,6 +95,8 @@ recorded in `tasks/tasks.json`.
 | `cfg-ratematch-E-last-cb` | L3 | G is not divisible by C, so the last code blocks get the larger E |
 | `lbrm-k0-rv3-maxmimo8` | L4 | TBS_LBRM uses v = min(maxMIMO-Layers, 4) = 4, not 8, and n_PRB,LBRM = 135 |
 | `lbrm-k0-rv2-2layer` | L4 | N_ref = 18297 is not a multiple of Z_c, so k0 needs the floor; ignoring LBRM gives 12672 |
+| `ctx-paging-tb-scaling` | L5 | Paging (DCI 1_0, P-RNTI): MCS table 1 although qam256 is configured, xOverhead assumed 0, and TB scaling S = 0.5 moves N_info below 3824 into the table branch (golden 3824; ignoring S gives 7552) |
+| `ctx-2cw-7layer-tb2` | L5 | 7 layers = two codewords: transport block 2 is mapped to ceil(7/2) = 4 layers with its own I_MCS (7 layers gives 1147488, 3 layers 491800) |
 
 ## How grading works
 
@@ -127,6 +130,7 @@ trace of intermediate values (N_RE, N_info, C, Z_c, G and so on) for checking.
 | `reference/tbs.py` | TS 38.214 §5.1.3.2, Tables 5.1.3.1-1, 5.1.3.1-2, 5.1.3.2-1 |
 | `reference/ldpc.py` | TS 38.212 §5.2.2 (segmentation), §5.4.2.1 (rate matching, LBRM, k0), §7.2.2 (base graph), Tables 5.3.2-1 (lifting sizes), 5.4.2.1-1 (n_PRB,LBRM), 5.4.2.1-2 (k0) |
 | `reference/nr_config.py` | TS 38.101-1 Table 5.3.2-1 (N_RB), TS 38.211 §7.4.1.1.2 (DM-RS) |
+| `reference/context.py` | TS 38.214 §5.1.3.1 (MCS table selection), §5.1.3.2 and Table 5.1.3.2-2 (xOverhead for P/SI/RA-RNTI, TB scaling S), TS 38.211 Table 7.3.1.3-1 (codeword-to-layer mapping) |
 
 The reference code uses exact rational arithmetic (`fractions.Fraction`). Spec boundaries
 such as `R ≤ 0.67` and `R ≤ 1/4` are therefore evaluated exactly, without floating-point
@@ -140,7 +144,7 @@ importing `reference/`. TBS and code-block segmentation come from the open-sourc
 of the MATLAB 5G Toolbox functions). G, the rate-matching lengths E, and LBRM N_cb / k0 are
 re-derived from the TS 38.212 formulas, written separately from `reference/ldpc.py`. It
 also compares every intermediate value in the reference trace (C, filler bits, G,
-TBS_LBRM, N_cb, ...). Result: **12/12 golden answers confirmed**. py3gpp is an optional
+TBS_LBRM, N_cb, ...). Result: **14/14 golden answers confirmed**. py3gpp is an optional
 dependency, so the eval itself does not need it:
 
 ```bash
@@ -158,8 +162,8 @@ equivalent, so they were checked by hand against the spec documents.
 Requires **Python 3.10+**.
 
 ```bash
-git clone https://github.com/Fleur41/nr-phy-bench.git
-cd nr-phy-bench
+git clone https://github.com/Fleur41/nr-phy-bench.git   # or unzip the submission
+cd nr-phy-bench                                          # (the unzipped folder)
 python3 -m venv .venv
 source .venv/bin/activate          # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
@@ -176,6 +180,7 @@ cp .env.example .env               # then add the key(s) for the providers you u
 python -m src.run_eval --list-models gemini                  # model ids your key can use
 python -m src.run_eval --models gemini:gemini-3.8-flash --samples 3 --out results/raw/flash.jsonl
 python -m src.grade results/raw/*.jsonl --name final         # grade one or many files
+python -m src.analyze results/raw/*.jsonl --name analysis    # where each wrong answer leaves the spec
 ```
 
 Supported providers (`provider:model`):
@@ -224,11 +229,11 @@ python -m src.grade results/raw/*.jsonl --name check   # writes results/scores/c
 
 - **No API calls** (tests, task build, `--dry-run`, regrading the included raw outputs):
   under a minute in total, free.
-- **Full run, per model** (12 tasks × 3 samples = 36 requests, sent one at a time): in our
+- **Full run, per model** (14 tasks × 3 samples = 42 requests, sent one at a time): in our
   run a single response took a median of about 3 min (gpt-oss-120b on Groq), 5 min
   (gemma-4-31b) and 4 to 10 min (Gemini 3.8 Flash, high reasoning effort). That is roughly
   2 to 6 hours per model, plus waiting time for free-tier rate limits.
-- **Daily caps:** Gemini 3.8 Flash on the free tier allows 20 requests per day, so its 36
+- **Daily caps:** Gemini 3.8 Flash on the free tier allows 20 requests per day, so its 42
   answers take 2 days or more.
 - **Cost:** **$0** for this submission (free tiers only). On paid APIs, expect up to roughly
   30k output tokens per response for reasoning models, so at most about 1M output tokens
@@ -245,7 +250,7 @@ python -m src.grade results/raw/*.jsonl --name check   # writes results/scores/c
 | `groq:openai/gpt-oss-120b` | Open-weight | Groq (free tier) |
 
 - **Run dates:** 1 to [END DATE] November 2026 (the free-tier quota spread the run over several days).
-- **Runs per task:** 3 samples per task per model (36 responses per model).
+- **Runs per task:** 3 samples per task per model (42 responses per model).
 - **Reasoning effort:** `high` where the API accepts it.
 - **Max output tokens:** 65,536 (falls back to 32,000 if a model rejects it). The settings
   actually used are stored with every response in `results/raw/*.jsonl` (`settings` field).
@@ -262,10 +267,27 @@ _Results will be added after the full run._
 
 ## Failure analysis
 
-Every wrong answer was read against the reference trace in `tasks/tasks.json` to find the
-first step where the model went off the spec. The patterns below are taken from the raw
-responses in `results/raw/` (task and sample are given so each one can be checked).
-[UPDATE COUNTS AFTER FINAL RUN.]
+**Where the chain breaks (automatic).** `python -m src.analyze results/raw/*.jsonl` walks
+each wrong response through the reference trace of its task (n_PRB → N_RE → N_info →
+N_info′ → TBS → K′/K → G → TBS_LBRM → N_cb → answer) and reports the first golden
+intermediate value that never appears in the model's working. It is a deterministic
+heuristic (exact integer matching, no LLM judge); spot checks by hand agreed with it.
+Full per-response table: `results/scores/analysis.md`.
+
+[PASTE THE SUMMARY TABLE FROM results/scores/analysis.md AFTER THE FINAL RUN.]
+
+The breaks land on the steps the tasks were designed to trap: all 6 wrong answers on
+`tbs-156-cap` break at **N_RE** (the 156-RE cap), and the L3 `cfg-filler-bits-ld-trap`
+failures break at N_RE as well (the DM-RS symbol count). [UPDATE COUNTS AFTER FINAL RUN.]
+
+The patterns below are taken from the raw responses in `results/raw/` (task and sample are
+given so each one can be checked).
+
+**0. Misremembering the bandwidth table (both open models).** Deriving n_PRB from the
+carrier is the first L2 step, and it is a table lookup (TS 38.101-1 Table 5.3.2-1). Gemma
+computed "36 MHz / (12 × 30 kHz) = 100 RBs" for 40 MHz @ 30 kHz (spec: **106**;
+`cfg-tbs-dmrs-type2-xoverhead`, sample 0). gpt-oss used 135 RBs for 50 MHz @ 30 kHz
+(spec: **133**; `lbrm-k0-rv3-maxmimo8`, sample 2). Everything after that step is wrong too.
 
 **1. Skipping the TBS quantisation entirely (gemma-4-31b).** TS 38.214 §5.1.3.2 turns
 N_info into a TBS through quantisation, a table or formula branch and byte alignment. Gemma
@@ -314,7 +336,7 @@ shown separately as "+N excl." and re-run; they never count as wrong.
 ## Prior work and sources
 
 - **Built during the hackathon** [AUTHOR: CONFIRM]. No code, tasks or data existed before the hackathon. No
-  existing benchmark or dataset was used; all 12 tasks and their configurations were written
+  existing benchmark or dataset was used; all 14 tasks and their configurations were written
   for this eval.
 - **3GPP specifications (the source of every rule and table):**
   - TS 38.214 (NR; Physical layer procedures for data), §5.1.3 [VERSION, e.g. V18.x.0]
@@ -337,11 +359,11 @@ shown separately as "+N excl." and re-run; they never count as wrong.
   open-weight. The harness already supports Anthropic and OpenAI, so anyone with keys can
   add them with one command.
 - **Free-tier quotas.** The Gemini free tier allows **20 requests per day per model** (as of
-  Nov 2026), so the 36 Gemini 3.8 Flash answers were collected over several days using the
+  Nov 2026), so the 42 Gemini 3.8 Flash answers were collected over several days using the
   runner's resume feature. Failed attempts (for example 503 "high demand" errors) also
   count against that quota. Groq's per-minute token limits can block or cut off long reasoning
   outputs. Quota problems show up as `error` or `truncated` and are re-run, never counted as `wrong`.
-- **Small task set.** 12 tasks × 3 samples gives a directional signal, not tight confidence
+- **Small task set.** 14 tasks × 3 samples gives a directional signal, not tight confidence
   intervals. The task generator makes it easy to add more configurations.
 - **Scope.** Downlink PDSCH, FR1, single-symbol DM-RS, PDSCH mapping type A, single DL BWP
   spanning the carrier. Uplink transform precoding, mapping type B, FR2 and multi-TRP are not
@@ -351,7 +373,9 @@ shown separately as "+N excl." and re-run; they never count as wrong.
 - **Hand-entered spec tables.** The spec tables were entered by hand from the 3GPP
   specifications. The TBS table, MCS index table 1 and the LDPC lifting sizes are also
   checked automatically against py3gpp (`python -m src.crosscheck`). The rest (MCS index
-  table 2, N_RB, DM-RS, LBRM tables) were checked by the author. Corrections only need a table
+  table 2, N_RB, DM-RS, LBRM tables) and the L5 context rules in `reference/context.py`
+  (MCS table selection, xOverhead and TB scaling for P-RNTI, codeword-to-layer mapping) were
+  checked by the author against the spec text. Corrections only need a table
   edit and `python -m src.build_tasks`. Model responses can be regraded without rerunning
   the models, because the prompts contain no derived values.
 
@@ -359,12 +383,12 @@ shown separately as "+N excl." and re-run; they never count as wrong.
 
 ```
 reference/     Python reference implementations (the source of all golden answers)
-src/           build_tasks.py, run_eval.py, grade.py, crosscheck.py (independent check via py3gpp)
+src/           build_tasks.py, run_eval.py, grade.py, analyze.py (step-level diagnosis), crosscheck.py (independent check via py3gpp)
 tasks/         tasks.json (generated: prompts, golden answers, traps, reference traces)
 results/raw/   raw model responses, one JSON line per task x model x sample
 results/scores/ graded results (.json) and summary tables (.md)
 results/pilot/ earlier exploratory runs (smaller task set, 32k output limit), kept for transparency
-tests/         tests for the reference code and the grader
+tests/         tests for the reference code, the grader and the analysis
 ```
 
 ## Author

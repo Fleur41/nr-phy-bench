@@ -60,6 +60,7 @@ def compute_tbs(
     mcs_table: int = 1,
     num_layers: int = 1,
     n_oh_prb: int = 0,
+    scaling: Fraction | int = 1,
     return_trace: bool = False,
 ):
     """Compute TBS per TS 38.214 5.1.3.2.
@@ -69,23 +70,28 @@ def compute_tbs(
     n_dmrs_prb  : DM-RS REs per PRB in the allocation (incl. CDM-group overhead)
     mcs_index   : I_MCS
     mcs_table   : 1 (64QAM) or 2 (256QAM)
-    num_layers  : v
+    num_layers  : v (layers of THIS codeword)
     n_oh_prb    : xOverhead (0, 6, 12 or 18)
+    scaling     : S from Table 5.1.3.2-2 (1, 1/2 or 1/4); 1 unless DCI 1_0 with
+                  P-RNTI / RA-RNTI / MsgB-RNTI
     """
     qm, r1024 = MCS_TABLES[mcs_table][mcs_index]
     R = Fraction(r1024) / 1024  # exact arithmetic, no float rounding surprises
+    S = Fraction(scaling)
 
     # Step 1: number of REs
     n_re_prime = 12 * n_symb_sh - n_dmrs_prb - n_oh_prb
     n_re = min(156, n_re_prime) * n_prb
 
     # Step 2: intermediate number of information bits
-    n_info = n_re * R * qm * num_layers
+    n_info = S * n_re * R * qm * num_layers
 
     trace = {
         "Qm": qm, "R": float(R), "N_RE_prime": n_re_prime, "N_RE": n_re,
         "N_info": float(n_info),
     }
+    if S != 1:
+        trace["S"] = float(S)
 
     if n_info <= 3824:
         # Step 3

@@ -99,7 +99,7 @@ def to_markdown(rows: list[dict], summary: dict) -> str:
         out.append(f"| {m} | {s['correct']} | {s['wrong']} | {s['no_answer']} | "
                    f"{s['truncated']} | {s['error']} | "
                    f"{accuracy_cell([r for r in rows if r['model'] == m])} |")
-    names = {1: "L1 explicit", 2: "L2 derived", 3: "L3 chained", 4: "L4 LBRM"}
+    names = {1: "L1 explicit", 2: "L2 derived", 3: "L3 chained", 4: "L4 LBRM", 5: "L5 context"}
     out += ["", "| Model | " + " | ".join(names.get(lv, f"L{lv}") for lv in levels) + " |",
             "|---|" + "---|" * len(levels)]
     for m in models:

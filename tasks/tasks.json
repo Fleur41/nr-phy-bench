@@ -598,5 +598,98 @@
       "N_cb": 18297,
       "k0": 8832
     }
+  },
+  {
+    "id": "ctx-paging-tb-scaling",
+    "level": 5,
+    "category": "context-tbs",
+    "spec": "TS 38.214 5.1.3.1, 5.1.3.2; TS 38.211 7.3.1.3",
+    "trap": "Paging (DCI 1_0, P-RNTI): MCS table 1 must be used although qam256 is configured; xOverhead is assumed 0 for P-RNTI; S = 0.5 from the TB scaling field moves N_info (3819.375) below 3824 into the table branch. Ignoring S gives 7552, using the 256QAM table 6912, applying xOverhead 3624, all three mistakes 13064",
+    "params": {
+      "dci_format": "1_0",
+      "rnti": "P-RNTI",
+      "tb_scaling_field": "01",
+      "configured_mcs_table": "qam256",
+      "configured_xoverhead": 6,
+      "n_prb": 48,
+      "n_symb_sh": 12,
+      "n_dmrs_prb": 24,
+      "mcs_index": 9,
+      "total_layers": 1,
+      "codeword": 0
+    },
+    "prompt": "You are a 5G NR physical-layer engineer. A UE in RRC_CONNECTED decodes a paging message on PDSCH:\n- The PDSCH is scheduled by DCI format 1_0 with CRC scrambled by P-RNTI; the DCI field 'TB scaling' = '01'\n- For its unicast traffic the UE is configured with PDSCH-Config mcs-Table = qam256 and PDSCH-ServingCellConfig xOverhead = xOh6\n- I_MCS = 9, 1 layer, single codeword\n- Allocated PRBs n_PRB = 48, PDSCH symbols N_symb^sh = 12 (mapping type A)\n- DM-RS REs per PRB N_DMRS^PRB = 24 (already includes the DM-RS CDM groups without data)\n- No PT-RS, CSI-RS, SSB, or rate-matching resources overlap the PDSCH\n\nCompute the Transport Block Size (TBS) in bits of this paging PDSCH, following TS 38.214 Sections 5.1.3.1 and 5.1.3.2.\n\nShow your working, then end your response with a final line in exactly this format (digits only, no commas or units):\nFINAL ANSWER: <integer>",
+    "answer": 3824,
+    "reference_trace": {
+      "mcs_table": 1,
+      "N_oh_PRB": 0,
+      "S": 0.5,
+      "layers": 1,
+      "n_PRB": 48,
+      "N_DMRS_PRB": 24,
+      "I_MCS": 9,
+      "tbs_trace": {
+        "Qm": 2,
+        "R": 0.6630859375,
+        "N_RE_prime": 120,
+        "N_RE": 5760,
+        "N_info": 3819.375,
+        "S": 0.5,
+        "step": 3,
+        "n": 5,
+        "N_info_prime": 3808,
+        "TBS": 3824
+      },
+      "tbs": 3824
+    }
+  },
+  {
+    "id": "ctx-2cw-7layer-tb2",
+    "level": 5,
+    "category": "context-tbs",
+    "spec": "TS 38.214 5.1.3.1, 5.1.3.2; TS 38.211 7.3.1.3",
+    "trap": "7 layers means two codewords; codeword 1 (TB 2) is mapped to ceil(7/2) = 4 layers (TS 38.211 Table 7.3.1.3-1) and uses its own I_MCS = 17 (256QAM table). 7 layers gives 1147488, the 3 layers of codeword 0 gives 491800, TB 1's I_MCS 852696; double-symbol DM-RS takes 24 REs/PRB (12 gives 704904)",
+    "params": {
+      "dci_format": "1_1",
+      "rnti": "C-RNTI",
+      "tb_scaling_field": null,
+      "configured_mcs_table": "qam256",
+      "configured_xoverhead": 0,
+      "bandwidth_mhz": 100,
+      "scs_khz": 30,
+      "start_symbol": 1,
+      "length": 13,
+      "dmrs_type": 1,
+      "dmrs_symbols": 2,
+      "cdm_groups_without_data": 2,
+      "mcs_index_tb1": 22,
+      "mcs_index_tb2": 17,
+      "total_layers": 7,
+      "codeword": 1
+    },
+    "prompt": "You are a 5G NR physical-layer engineer. A UE is scheduled with a single-user MIMO PDSCH:\n- FR1 carrier, channel bandwidth 100 MHz, subcarrier spacing 30 kHz; the PDSCH is allocated over the full maximum transmission bandwidth of the carrier (TS 38.101-1)\n- Scheduled by DCI format 1_1 with CRC scrambled by C-RNTI; PDSCH-Config mcs-Table = qam256; xOverhead is not configured\n- 7 layers in total, two transport blocks: transport block 1 has I_MCS = 22, transport block 2 has I_MCS = 17\n- PDSCH mapping type A, dmrs-TypeA-Position = pos2, start symbol S = 1, length L = 13 symbols\n- DM-RS: dmrs-Type = type1, double-symbol front-loaded DM-RS (maxLength = len2, 2 DM-RS symbols), dmrs-AdditionalPosition = pos0, number of DM-RS CDM groups without data = 2\n- No PT-RS, CSI-RS, SSB, or rate-matching resources overlap the PDSCH\n\nCompute the Transport Block Size (TBS) in bits of transport block 2 (codeword 1), following TS 38.211 Section 7.3.1.3 and TS 38.214 Sections 5.1.3.1 and 5.1.3.2.\n\nShow your working, then end your response with a final line in exactly this format (digits only, no commas or units):\nFINAL ANSWER: <integer>",
+    "answer": 655800,
+    "reference_trace": {
+      "mcs_table": 2,
+      "N_oh_PRB": 0,
+      "S": 1.0,
+      "layers": 4,
+      "n_PRB": 273,
+      "N_DMRS_PRB": 24,
+      "I_MCS": 17,
+      "tbs_trace": {
+        "Qm": 6,
+        "R": 0.75390625,
+        "N_RE_prime": 132,
+        "N_RE": 36036,
+        "N_info": 652026.375,
+        "step": 4,
+        "n": 14,
+        "N_info_prime": 655360,
+        "C": 78,
+        "TBS": 655800
+      },
+      "tbs": 655800
+    }
   }
 ]
