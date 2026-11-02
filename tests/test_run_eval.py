@@ -112,3 +112,20 @@ def test_no_stop_by_default(monkeypatch, tmp_path):
         raise FakeError(429)
     recs = _run_main(monkeypatch, tmp_path, always_429, ["--tasks", "tbs-156-cap"])
     assert len(recs) == 3 and all("error" in r for r in recs)
+
+
+def test_auth_error_stops_model_without_writing(monkeypatch, tmp_path):
+    calls = {"n": 0}
+
+    def bad_key(model, prompt):
+        calls["n"] += 1
+        raise FakeError(401, "Invalid API Key")
+    assert _run_main(monkeypatch, tmp_path, bad_key, []) == []
+    assert calls["n"] == 1
+
+
+def test_repeated_400_stops_model(monkeypatch, tmp_path):
+    def rejected(model, prompt):
+        raise FakeError(400)
+    recs = _run_main(monkeypatch, tmp_path, rejected, [])
+    assert len(recs) == 1  # first rejection recorded, second stops the model unwritten

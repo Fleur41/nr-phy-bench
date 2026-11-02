@@ -45,6 +45,12 @@ def _is_transient(e: Exception) -> bool:
             or (isinstance(status, int) and status >= 500))
 
 
+def _is_auth_error(e: Exception) -> bool:
+    """Missing key in .env, or the provider rejected the key (401/403)."""
+    return ("is not set in .env" in str(e)
+            or getattr(e, "status_code", None) in (401, 403))
+
+
 def with_rate_limit_retry(call, model: str, prompt: str,
                           transient_wait: int = TRANSIENT_WAIT_S) -> dict:
     """Retry quota errors and transient failures; anything else is raised immediately.
@@ -257,6 +263,7 @@ def main() -> None:
             provider, model = spec.split(":", 1)
             call = PROVIDERS[provider]
             quota_failures = 0  # consecutive samples that ended in a 429
+            rejected = 0  # consecutive samples rejected with 400 after every fallback setting
             for t, s in ((t, s) for t in tasks for s in range(args.samples)):
                 if (spec, t["id"], s) in done:
                     continue
@@ -271,11 +278,18 @@ def main() -> None:
                     rec.update(with_rate_limit_retry(call, model, t["prompt"],
                                                      args.transient_wait))
                     print("done")
-                    quota_failures = 0
+                    quota_failures = rejected = 0
                 except Exception as e:  # record and continue; graded as "error"
                     rec["error"] = f"{type(e).__name__}: {e}"
                     quota_failures = quota_failures + 1 if getattr(e, "status_code", None) == 429 else 0
                     print(f"ERROR {rec['error'][:120]}")
+                    rejected = rejected + 1 if getattr(e, "status_code", None) == 400 else 0
+                    # Every other request would fail the same way. Gemini reports an invalid
+                    # key as a bare 400, so two samples in a row rejected with 400 also stop.
+                    if _is_auth_error(e) or rejected >= 2:
+                        print(f"{spec}: API key missing or rejected (or the request is invalid "
+                              f"for this model); stopping this model. Check .env and the model id.")
+                        break
                 rec["latency_s"] = round(time.time() - start, 1)
                 f.write(json.dumps(rec) + "\n")
                 f.flush()
