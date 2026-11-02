@@ -213,3 +213,9 @@ tests/         tests for the reference code and the grader
 
 BSc Telecommunication & Information Engineering, software engineering specialisation.
 Built for the micro1 AI eval hackathon, 2026.
+
+**AI assistance:** the code in this repository was written with the help of
+[Claude Code](https://claude.com/claude-code) (Anthropic). The author chose the domain and
+the tasks, checked the golden answers and spec tables against the 3GPP specifications, ran
+the evaluations and reviewed every change. The golden answers are also confirmed
+independently with py3gpp (`python -m src.crosscheck`).
