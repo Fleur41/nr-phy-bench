@@ -22,3 +22,11 @@ def test_no_answer():
     assert extract_answer("The TBS is 54296.") is None
     assert extract_answer("FINAL ANSWER: cannot determine") is None
     assert extract_answer("") is None
+
+
+def test_accuracy_excludes_infrastructure_failures():
+    from src.grade import accuracy_cell
+    rows = [{"status": s} for s in ("correct", "wrong", "no_answer", "error", "truncated")]
+    assert accuracy_cell(rows) == "1/3 (33%) +2 excl."
+    assert accuracy_cell([{"status": "error"}]) == "n/a +1 excl."
+    assert accuracy_cell([{"status": "correct"}]) == "1/1 (100%)"

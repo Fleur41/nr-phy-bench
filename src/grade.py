@@ -43,6 +43,20 @@ def extract_answer(text: str):
     return int(re.sub(r"[,   ]", "", m.group(0)))
 
 
+# Statuses that reflect the model; `truncated` and `error` are infrastructure failures
+# (token limit, quota, outage) and are excluded from accuracy, never counted as wrong.
+GRADED = ("correct", "wrong", "no_answer")
+
+
+def accuracy_cell(rows: list[dict]) -> str:
+    """'correct/graded (pct)', plus how many infrastructure failures were excluded."""
+    graded = sum(r["status"] in GRADED for r in rows)
+    ok = sum(r["status"] == "correct" for r in rows)
+    excluded = len(rows) - graded
+    cell = f"{ok}/{graded} ({ok / graded:.0%})" if graded else "n/a"
+    return cell + (f" +{excluded} excl." if excluded else "")
+
+
 def grade_file(*raw_paths: Path) -> tuple[list[dict], dict]:
     tasks = json.loads(TASKS.read_text())
     golden = {t["id"]: t["answer"] for t in tasks}
@@ -82,9 +96,9 @@ def to_markdown(rows: list[dict], summary: dict) -> str:
            "|---|---|---|---|---|---|---|"]
     for m in models:
         s = summary[m]
-        acc = s["correct"] / s["total"] if s["total"] else 0
         out.append(f"| {m} | {s['correct']} | {s['wrong']} | {s['no_answer']} | "
-                   f"{s['truncated']} | {s['error']} | {acc:.0%} |")
+                   f"{s['truncated']} | {s['error']} | "
+                   f"{accuracy_cell([r for r in rows if r['model'] == m])} |")
     names = {1: "L1 explicit", 2: "L2 derived", 3: "L3 chained", 4: "L4 LBRM"}
     out += ["", "| Model | " + " | ".join(names.get(lv, f"L{lv}") for lv in levels) + " |",
             "|---|" + "---|" * len(levels)]
@@ -92,8 +106,7 @@ def to_markdown(rows: list[dict], summary: dict) -> str:
         cells = []
         for lv in levels:
             rs = [r for r in rows if r["model"] == m and r["level"] == lv]
-            ok = sum(r["status"] == "correct" for r in rs)
-            cells.append(f"{ok}/{len(rs)} ({ok / len(rs):.0%})" if rs else "-")
+            cells.append(accuracy_cell(rs) if rs else "-")
         out.append(f"| {m} | " + " | ".join(cells) + " |")
     out += ["", "| Task | Level | Expected | " + " | ".join(models) + " |",
             "|---|---|---|" + "---|" * len(models)]
@@ -106,6 +119,8 @@ def to_markdown(rows: list[dict], summary: dict) -> str:
                 else r["status"] for r in rs))
         first = next(r for r in rows if r["task_id"] == tid)
         out.append(f"| {tid} | L{first['level']} | {first['expected']} | " + " | ".join(cells) + " |")
+    out += ["", "Accuracy = correct / (correct + wrong + no_answer). `truncated` and `error` "
+                "are infrastructure failures: excluded from accuracy and shown as \"+N excl.\"."]
     return "\n".join(out) + "\n"
 
 

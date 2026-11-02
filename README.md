@@ -69,8 +69,10 @@ recorded in `tasks/tasks.json`.
 | `truncated` | The output hit the token limit before an answer (harness or quota limit) |
 | `error` | The API call failed (for example a free-tier quota) |
 
-Accuracy is `correct / total`. `truncated` and `error` are reported separately so readers
-can tell model failures from infrastructure failures.
+Accuracy is `correct / (correct + wrong + no_answer)`. A missing or unparseable answer
+counts against the model, but `truncated` and `error` are infrastructure failures, so they
+are left out of the denominator and shown as "+N excl." in every table. They are re-run
+with `--out` rather than scored.
 
 ## Where the golden answers come from
 
