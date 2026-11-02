@@ -106,9 +106,10 @@ pip install -r requirements-crosscheck.txt
 python -m src.crosscheck           # exits non-zero on any disagreement
 ```
 
-What the cross-check does not cover: the small spec tables that turn a configuration into
-inputs (MCS rows, N_RB, DM-RS symbol positions, n_PRB,LBRM) are typed in by hand in both
-places. They were checked by hand against the spec documents.
+It also compares the spec tables in `reference/` with py3gpp's own copies: TBS Table
+5.1.3.2-1, MCS index table 1 and the LDPC lifting sizes all match. The remaining small
+tables (MCS index table 2, N_RB, DM-RS symbol positions, n_PRB,LBRM, k0) have no py3gpp
+equivalent, so they were checked by hand against the spec documents.
 
 ## Quick start
 

@@ -9,9 +9,12 @@ reference/, so that a bug there cannot silently confirm itself:
 - G, the rate-matching output lengths E (TS 38.212 5.4.2.1), LBRM N_cb and k0 are
   re-derived below from the spec formulas, written separately from reference/ldpc.py.
 
-Limitation: the small spec tables used to derive inputs (MCS rows, N_RB, DM-RS symbol
-count, n_PRB,LBRM) are typed in below. They were re-entered from the spec rather than
-copied from reference/, but they are not checked against an external library.
+It also compares the spec tables typed into reference/ with py3gpp's copies where py3gpp
+has one: TBS Table 5.1.3.2-1, MCS index table 1, LDPC lifting sizes.
+
+Limitation: the remaining small tables (MCS index table 2, N_RB, DM-RS symbol count,
+n_PRB,LBRM, k0 numerators) have no py3gpp equivalent. They are typed in below from the
+spec rather than copied from reference/, and were checked by hand.
 
 Usage (optional dependency, not needed to run the eval):
     pip install -r requirements-crosscheck.txt
@@ -130,6 +133,35 @@ def trace_value(trace: dict, key: str):
     return None
 
 
+def compare_tables() -> int:
+    """Compare the spec tables typed into reference/ with py3gpp's copies, where py3gpp
+    has one. (Data only: the recomputation above never imports reference/.)"""
+    import re
+
+    import importlib
+
+    from py3gpp.nrDLSCHInfo import getZlist
+    from py3gpp.nrPDSCHMCSTables import nrPDSCHMCSTables
+
+    from reference.ldpc import LIFTING_SIZES
+    from reference.tbs import MCS_TABLE_1, TBS_TABLE
+
+    # py3gpp/__init__ re-exports the nrTBS function under the module's name
+    src = Path(importlib.import_module("py3gpp.nrTBS").__file__).read_text()
+    block = src[src.index("tbs_values"):]
+    py_tbs = [int(x) for x in re.findall(r"\d+", block[:block.index("]")])]
+    q64 = nrPDSCHMCSTables().QAM64Table
+    checks = {
+        "TS 38.214 Table 5.1.3.2-1 (TBS for N_info <= 3824)": py_tbs == TBS_TABLE,
+        "TS 38.214 Table 5.1.3.1-1 (MCS index table 1)": all(
+            (int(q64.Qm(i)), int(q64._table[2, i])) == MCS_TABLE_1[i] for i in range(29)),
+        "TS 38.212 Table 5.3.2-1 (LDPC lifting sizes)": sorted(set(getZlist())) == LIFTING_SIZES,
+    }
+    for name, ok in checks.items():
+        print(f"{'OK      ' if ok else 'MISMATCH'} {name}: reference/ vs py3gpp")
+    return sum(not ok for ok in checks.values())
+
+
 def main() -> int:
     tasks = json.loads(TASKS.read_text())
     failures = 0
@@ -146,8 +178,9 @@ def main() -> int:
               f"{asked_quantity(task['category'])}={task['answer']:<8} [{detail}]")
         if diffs:
             print(f"         differs from reference trace (crosscheck, reference): {diffs}")
-    print(f"\n{len(tasks) - failures}/{len(tasks)} golden answers independently confirmed")
-    return 1 if failures else 0
+    print(f"\n{len(tasks) - failures}/{len(tasks)} golden answers independently confirmed\n")
+    table_failures = compare_tables()
+    return 1 if failures or table_failures else 0
 
 
 if __name__ == "__main__":
