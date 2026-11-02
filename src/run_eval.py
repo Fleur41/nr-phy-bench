@@ -45,12 +45,15 @@ def _is_transient(e: Exception) -> bool:
             or (isinstance(status, int) and status >= 500))
 
 
-def with_rate_limit_retry(call, model: str, prompt: str) -> dict:
+def with_rate_limit_retry(call, model: str, prompt: str,
+                          transient_wait: int = TRANSIENT_WAIT_S) -> dict:
     """Retry quota errors and transient failures; anything else is raised immediately.
 
     - HTTP 429, or Groq's 413 'request too large' (its estimate depends on recent usage,
       so it is retried once after the window resets): wait RATE_LIMIT_WAIT_S.
-    - Timeouts, dropped connections, 5xx: wait TRANSIENT_WAIT_S, at most TRANSIENT_RETRIES.
+    - Timeouts, dropped connections, 5xx: wait `transient_wait`, at most TRANSIENT_RETRIES.
+      On a daily-capped free tier every failed attempt still costs one request of the
+      day's quota, so a long wait (spread over the day) beats fast retries in a spike.
     """
     quota_tries = transient_tries = 0
     while True:
@@ -68,7 +71,7 @@ def with_rate_limit_retry(call, model: str, prompt: str) -> dict:
                 transient_tries += 1
                 if transient_tries > TRANSIENT_RETRIES:
                     raise
-                wait = TRANSIENT_WAIT_S
+                wait = transient_wait
             else:
                 raise
             print(f"({status or type(e).__name__}, waiting {wait}s)", end=" ", flush=True)
@@ -202,6 +205,12 @@ def main() -> None:
     ap.add_argument("--out", type=Path,
                     help="output file; if it exists, finished answers are kept and only "
                          "missing or failed (error/truncated) ones are re-run")
+    ap.add_argument("--transient-wait", type=int, default=TRANSIENT_WAIT_S, metavar="S",
+                    help=f"seconds to wait before retrying a timeout/5xx (default "
+                         f"{TRANSIENT_WAIT_S}); use a long wait for daily-capped free tiers")
+    ap.add_argument("--stop-after-quota-failures", type=int, default=0, metavar="N",
+                    help="stop a model after N consecutive samples fail with HTTP 429 even "
+                         "after retries (daily quota used up); 0 = never stop")
     ap.add_argument("--list-models", metavar="PROVIDER", choices=sorted(PROVIDERS),
                     help="print the model ids your key can use, then exit")
     args = ap.parse_args()
@@ -247,25 +256,33 @@ def main() -> None:
         for spec in args.models:
             provider, model = spec.split(":", 1)
             call = PROVIDERS[provider]
-            for t in tasks:
-                for s in range(args.samples):
-                    if (spec, t["id"], s) in done:
-                        continue
-                    print(f"{spec:35s} {t['id']:35s} sample {s} ...", end=" ", flush=True)
-                    rec = {"task_id": t["id"], "model": spec, "sample": s, "effort": EFFORT}
-                    start = time.time()
-                    try:
-                        rec.update(with_rate_limit_retry(call, model, t["prompt"]))
-                        print("done")
-                    except Exception as e:  # record and continue; graded as "error"
-                        rec["error"] = f"{type(e).__name__}: {e}"
-                        print(f"ERROR {rec['error'][:120]}")
-                    rec["latency_s"] = round(time.time() - start, 1)
-                    f.write(json.dumps(rec) + "\n")
-                    f.flush()
+            quota_failures = 0  # consecutive samples that ended in a 429
+            for t, s in ((t, s) for t in tasks for s in range(args.samples)):
+                if (spec, t["id"], s) in done:
+                    continue
+                if args.stop_after_quota_failures and quota_failures >= args.stop_after_quota_failures:
+                    print(f"{spec}: {quota_failures} consecutive quota failures, "
+                          f"stopping this model (rerun with --out later to resume)")
+                    break
+                print(f"{spec:35s} {t['id']:35s} sample {s} ...", end=" ", flush=True)
+                rec = {"task_id": t["id"], "model": spec, "sample": s, "effort": EFFORT}
+                start = time.time()
+                try:
+                    rec.update(with_rate_limit_retry(call, model, t["prompt"],
+                                                     args.transient_wait))
+                    print("done")
+                    quota_failures = 0
+                except Exception as e:  # record and continue; graded as "error"
+                    rec["error"] = f"{type(e).__name__}: {e}"
+                    quota_failures = quota_failures + 1 if getattr(e, "status_code", None) == 429 else 0
+                    print(f"ERROR {rec['error'][:120]}")
+                rec["latency_s"] = round(time.time() - start, 1)
+                f.write(json.dumps(rec) + "\n")
+                f.flush()
 
-    print(f"\nSaved {out_path.relative_to(ROOT)}")
-    print(f"Grade with: python -m src.grade {out_path.relative_to(ROOT)}")
+    shown = out_path.relative_to(ROOT) if out_path.is_relative_to(ROOT) else out_path
+    print(f"\nSaved {shown}")
+    print(f"Grade with: python -m src.grade {shown}")
 
 
 if __name__ == "__main__":

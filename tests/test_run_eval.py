@@ -62,3 +62,53 @@ def test_client_errors_are_not_retried():
     with pytest.raises(FakeError):
         run_eval.with_rate_limit_retry(call, "m", "p")
     assert calls["n"] == 1
+
+
+def test_transient_wait_is_configurable(monkeypatch):
+    waits = []
+    monkeypatch.setattr(run_eval.time, "sleep", waits.append)
+    call, _ = make_call([FakeError(503)])
+    run_eval.with_rate_limit_retry(call, "m", "p", transient_wait=600)
+    assert waits == [600]
+
+
+def _run_main(monkeypatch, tmp_path, call, extra_args):
+    monkeypatch.setitem(run_eval.PROVIDERS, "fake", call)
+    out = tmp_path / "out.jsonl"
+    monkeypatch.setattr("sys.argv", ["run_eval", "--models", "fake:m", "--samples", "3",
+                                     "--out", str(out), *extra_args])
+    run_eval.main()
+    return [run_eval.json.loads(l) for l in out.read_text().splitlines()]
+
+
+def test_stops_model_after_consecutive_quota_failures(monkeypatch, tmp_path):
+    calls = {"n": 0}
+
+    def always_429(model, prompt):
+        calls["n"] += 1
+        raise FakeError(429)
+    recs = _run_main(monkeypatch, tmp_path, always_429, ["--stop-after-quota-failures", "2"])
+    assert len(recs) == 2  # stopped after 2 failed samples; the rest are left for resume
+    assert calls["n"] == 2 * (run_eval.RATE_LIMIT_RETRIES + 1)
+
+
+def test_success_resets_quota_failure_count(monkeypatch, tmp_path):
+    n = run_eval.RATE_LIMIT_RETRIES + 1  # attempts for one sample that fails on quota
+    pattern = iter([FakeError(429)] * n + [None] + [FakeError(429)] * n)
+
+    def flaky(model, prompt):
+        e = next(pattern)
+        if e:
+            raise e
+        return {"response": "FINAL ANSWER: 1"}
+    # fail, succeed, fail: never 2 in a row, so all 3 samples run
+    recs = _run_main(monkeypatch, tmp_path, flaky, ["--stop-after-quota-failures", "2",
+                                                    "--tasks", "tbs-156-cap"])
+    assert ["error" in r for r in recs] == [True, False, True]
+
+
+def test_no_stop_by_default(monkeypatch, tmp_path):
+    def always_429(model, prompt):
+        raise FakeError(429)
+    recs = _run_main(monkeypatch, tmp_path, always_429, ["--tasks", "tbs-156-cap"])
+    assert len(recs) == 3 and all("error" in r for r in recs)

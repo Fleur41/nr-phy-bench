@@ -153,6 +153,19 @@ Free tiers are slow and sometimes unreliable, so the runner:
   ones (`error`, `truncated`) are re-run. An interrupted run is never wasted, and failures caused by
   the infrastructure are retried instead of being counted against the model.
 
+On a **daily-capped** free tier (Gemini 3.8 Flash: 20 requests/day), every failed attempt
+also uses up quota. During one demand spike, 503 retries used up a full day's quota with no
+answers. For those models, use:
+
+```bash
+python -m src.run_eval --models gemini:gemini-3.8-flash --samples 3 --out results/raw/flash.jsonl \
+  --transient-wait 600 --stop-after-quota-failures 2
+```
+
+`--transient-wait 600` spaces 5xx retries 10 minutes apart. `--stop-after-quota-failures 2`
+stops the model after two samples in a row fail with 429; rerun the same command the next
+day to continue.
+
 ## Results
 
 <!-- RESULTS:START -->
