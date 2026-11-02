@@ -90,6 +90,24 @@ error. The tests (`tests/`) include hand-worked examples and property checks: fo
 every TBS the procedure can produce must split evenly into LDPC code blocks, and the
 rate-matching lengths must add up to exactly G.
 
+**Independent cross-check.** `src/crosscheck.py` recomputes every golden answer *without*
+importing `reference/`. TBS and code-block segmentation come from the open-source
+[py3gpp](https://pypi.org/project/py3gpp/) library (`nrTBS`, `nrDLSCHInfo`, a Python port
+of the MATLAB 5G Toolbox functions). G, the rate-matching lengths E, and LBRM N_cb / k0 are
+re-derived from the TS 38.212 formulas, written separately from `reference/ldpc.py`. It
+also compares every intermediate value in the reference trace (C, filler bits, G,
+TBS_LBRM, N_cb, ...). Result: **12/12 golden answers confirmed**. py3gpp is an optional
+dependency, so the eval itself does not need it:
+
+```bash
+pip install -r requirements-crosscheck.txt
+python -m src.crosscheck           # exits non-zero on any disagreement
+```
+
+What the cross-check does not cover: the small spec tables that turn a configuration into
+inputs (MCS rows, N_RB, DM-RS symbol positions, n_PRB,LBRM) are typed in by hand in both
+places. They were checked by hand against the spec documents.
+
 ## Quick start
 
 Requires **Python 3.10+**.
@@ -168,7 +186,7 @@ _Results will be added after the full run._
 
 ```
 reference/     Python reference implementations (the source of all golden answers)
-src/           build_tasks.py, run_eval.py, grade.py
+src/           build_tasks.py, run_eval.py, grade.py, crosscheck.py (independent check via py3gpp)
 tasks/         tasks.json (generated: prompts, golden answers, traps, reference traces)
 results/raw/   raw model responses, one JSON line per task x model x sample
 results/scores/ graded results (.json) and summary tables (.md)

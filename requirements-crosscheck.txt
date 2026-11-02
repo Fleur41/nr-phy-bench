@@ -1,0 +1,4 @@
+# Optional: only for `python -m src.crosscheck` (independent check of golden answers)
+py3gpp==0.6.0
+numpy==2.4.6
+scipy==1.17.1
