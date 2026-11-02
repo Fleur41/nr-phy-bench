@@ -12,9 +12,38 @@ implementation of the spec, so grading is exact: no rubric and no LLM judge.
 > **Results:** see [Results](#results). **Limitations:** see [Limitations](#limitations).
 > This run covers only models with a free API tier, so frontier coverage is limited.
 
+## Short description
+
+NR-PHY-Bench is a 12-task eval in **5G NR physical-layer engineering** (3GPP TS 38.211,
+38.212, 38.214 and 38.101-1). Each task asks a model to compute one integer that a radio
+engineer derives by following the spec: the transport block size, LDPC base graph, filler
+bits, rate-matching length E, or the limited-buffer redundancy-version start k0. **The gap:**
+models can explain these procedures, but when they have to execute them they skip steps,
+invent table limits or use simplified formulas from memory, and every slip gives a different
+integer. **Key finding:** [FILL AFTER FINAL RUN, e.g. "Gemini 3.8 Flash scored X/Y, while the
+open-weight models gemma-4-31b and gpt-oss-120b scored 0/Z: they never completed a single TBS
+procedure correctly, even with every input given (L1)."]
+
+## Video walkthrough
+
+**[VIDEO LINK: add after upload, and check it opens in a private window without requesting access]**
+
+The video (≤ 5 min) covers the problem, why models fail, how the eval works and the results.
+
 ---
 
-## Why this domain
+## Domain and expertise
+
+**Field:** telecommunications engineering, 5G NR physical layer (downlink shared channel).
+
+**Expertise the eval draws on:** reading and applying 3GPP specifications the way a modem,
+base-station or test-equipment engineer does: TBS determination (TS 38.214 §5.1.3.2), LDPC
+base-graph selection, code-block segmentation and rate matching including LBRM (TS 38.212),
+DM-RS overhead (TS 38.211) and carrier bandwidth to PRB mapping (TS 38.101-1). The author
+holds a BSc in Telecommunication & Information Engineering and has prior eval-writing
+experience (discriminative test cases, difficulty calibration, golden-answer verification).
+
+### Why this domain
 
 - **A real expert gap.** These calculations sit at the core of every 5G modem and base
   station scheduler. A single wrong rounding step changes the transport block size, and the
@@ -25,7 +54,20 @@ implementation of the spec, so grading is exact: no rubric and no LLM judge.
   One slip anywhere gives a different number.
 - **International.** 3GPP specifications are used by every 5G network in the world.
 
-## What the tasks test
+## What it tests and why it matters
+
+**What it measures:** whether a model can *execute* a multi-step 3GPP procedure exactly and
+end at the one integer the spec defines, not whether it can describe the procedure.
+
+**Who it's for:** teams building AI assistants for telecom engineering (RAN, modem and
+test-equipment vendors and operators), and model developers who want a hard, objectively
+graded test of long procedural reasoning over technical standards.
+
+**Why the gap matters in practice:** engineers increasingly ask AI models to size a
+transport block, check a scheduler configuration or explain a link-budget number. If a
+model returns a confident but wrong TBS or rate-matching length, the gNB and UE disagree on
+the bit layout and the data cannot be decoded. The error is silent: the explanation sounds
+right, only the number is wrong. An exact-integer benchmark exposes this directly.
 
 12 tasks in four difficulty levels. Each task is built around a specific **trap**: a step
 where a plausible mistake produces a different final integer. The trap for each task is
@@ -169,11 +211,123 @@ python -m src.run_eval --models gemini:gemini-3.8-flash --samples 3 --out result
 stops the model after two samples in a row fail with 429; rerun the same command the next
 day to continue.
 
+### Reproduce the scores without API keys
+
+The raw responses from our run are included, so the published tables can be regenerated
+offline in seconds:
+
+```bash
+python -m src.grade results/raw/*.jsonl --name check   # writes results/scores/check.{json,md}
+```
+
+### Runtime and cost
+
+- **No API calls** (tests, task build, `--dry-run`, regrading the included raw outputs):
+  under a minute in total, free.
+- **Full run, per model** (12 tasks × 3 samples = 36 requests, sent one at a time): in our
+  run a single response took a median of about 3 min (gpt-oss-120b on Groq), 5 min
+  (gemma-4-31b) and 4 to 10 min (Gemini 3.8 Flash, high reasoning effort). That is roughly
+  2 to 6 hours per model, plus waiting time for free-tier rate limits.
+- **Daily caps:** Gemini 3.8 Flash on the free tier allows 20 requests per day, so its 36
+  answers take 2 days or more.
+- **Cost:** **$0** for this submission (free tiers only). On paid APIs, expect up to roughly
+  30k output tokens per response for reasoning models, so at most about 1M output tokens
+  per model for the full run; multiply by your provider's price.
+
 ## Results
+
+### Models tested and settings
+
+| Model (provider:model ID as passed to `--models`) | Type | Provider |
+|---|---|---|
+| `gemini:gemini-3.8-flash` | Frontier, proprietary | Google AI Studio (free tier) |
+| `gemini:gemma-4-31b-it` | Open-weight | Google AI Studio (free tier) |
+| `groq:openai/gpt-oss-120b` | Open-weight | Groq (free tier) |
+
+- **Run dates:** 1 to [END DATE] November 2026 (the free-tier quota spread the run over several days).
+- **Runs per task:** 3 samples per task per model (36 responses per model).
+- **Reasoning effort:** `high` where the API accepts it.
+- **Max output tokens:** 65,536 (falls back to 32,000 if a model rejects it). The settings
+  actually used are stored with every response in `results/raw/*.jsonl` (`settings` field).
+- **Temperature:** not set, so each provider's default is used (the same for every model).
+  Variation between samples is reported rather than suppressed: 3 samples per task.
+- **Prompt:** identical for every model; the full prompt for every task is in `tasks/tasks.json`
+  and can be printed with `python -m src.run_eval --dry-run`.
+
+### Scores
 
 <!-- RESULTS:START -->
 _Results will be added after the full run._
 <!-- RESULTS:END -->
+
+## Failure analysis
+
+Every wrong answer was read against the reference trace in `tasks/tasks.json` to find the
+first step where the model went off the spec. The patterns below are taken from the raw
+responses in `results/raw/` (task and sample are given so each one can be checked).
+[UPDATE COUNTS AFTER FINAL RUN.]
+
+**1. Skipping the TBS quantisation entirely (gemma-4-31b).** TS 38.214 §5.1.3.2 turns
+N_info into a TBS through quantisation, a table or formula branch and byte alignment. Gemma
+often stops at N_info: "the TBS is the floor of N_info" gives **54789** on `tbs-156-cap`
+(sample 2; golden 54296). That value is not even a multiple of 8, which no valid TBS can be.
+Other samples invent formulas: TBS = S·v·N_info (40416), or rounding to a multiple of 1000
+(804000 on `cfg-tbs-100mhz-256qam-4layer`). This happens on L1, where every input is given.
+
+**2. Inventing table limits (gpt-oss-120b).** Table 5.1.3.2-1 only applies when
+N_info ≤ 3824; larger values use a formula. gpt-oss instead treats the table as the upper
+limit for every TBS and invents a "maximum entry": "the largest entry of the table … is
+**38 240 bits** … the selected TBS is capped" (`tbs-256qam-xoverhead`, sample 0; golden
+143400). The same invented cap appears on `cfg-tbs-156-cap-derived` and a different one
+(61440) on `tbs-low-rate-segmentation`.
+
+**3. Base-graph selection from memory, not from the spec (gpt-oss-120b).** TS 38.212 §7.2.2
+selects **base graph 2** whenever the code rate R ≤ 0.25, regardless of the block size. On
+`ldpc-filler-bits-bg2-large-tb` gpt-oss used a size-only rule ("A > 3824 → BG1", "B > 8424 →
+BG1"), chose BG1 and got 216 / 280 filler bits instead of 96. This is the trap the task was
+built around, and it was also the failure seen in the pilot.
+
+**4. Getting the rate-matching split backwards (gpt-oss-120b).** When G is not divisible by
+the number of code blocks, the spec gives the *last* blocks the larger length E. On
+`cfg-ratematch-E-last-cb` gpt-oss stated that the last block "receives only the base
+amount" (9059; golden 9088).
+
+**5. Simplified k0 formula for limited-buffer rate matching (both open models).** TS 38.212
+Table 5.4.2.1-2 defines k0 for rv = 3 with BG1 as ⌊56·N_cb / (66·Z_c)⌋·Z_c. Both open models
+used ⌊rv·N_cb / 4⌋ instead, with wrong N_cb values as well: gemma 92160, gpt-oss 12288
+(`lbrm-k0-rv3-maxmimo8`; golden 14592). Gemma's working shows it guessing ("N_cb^max =
+122880 × something? No.").
+
+**6. Gemini 3.8 Flash.** [FILL AFTER FINAL RUN: so far every Flash answer that came back
+was correct, including the LBRM k0 task. Describe any failures here, or state plainly that
+Flash solved the tasks it answered, and what that means for the gap (the gap is largest for
+open-weight models that teams can deploy on-premises).]
+
+**Why the models fail, in short:** the procedures are long, and each step has a plausible
+shortcut that looks right in a textbook explanation (a table "maximum", a size-only base-graph
+rule, an evenly spaced k0). Models that know *about* the spec take the shortcut. The exact
+integer answer shows every such slip, where a free-text answer would hide it.
+
+**Not counted as model failures:** API errors (429 quota, 5xx) and truncated outputs are
+shown separately as "+N excl." and re-run; they never count as wrong.
+
+## Prior work and sources
+
+- **Built during the hackathon** [AUTHOR: CONFIRM]. No code, tasks or data existed before the hackathon. No
+  existing benchmark or dataset was used; all 12 tasks and their configurations were written
+  for this eval.
+- **3GPP specifications (the source of every rule and table):**
+  - TS 38.214 (NR; Physical layer procedures for data), §5.1.3 [VERSION, e.g. V18.x.0]
+  - TS 38.212 (NR; Multiplexing and channel coding), §5.2.2, §5.3.2, §5.4.2.1, §7.2.2 [VERSION]
+  - TS 38.211 (NR; Physical channels and modulation), §7.4.1.1.2 [VERSION]
+  - TS 38.101-1 (NR; UE radio transmission and reception, Part 1: FR1), Table 5.3.2-1 [VERSION]
+
+  The specifications are freely available from [3gpp.org](https://www.3gpp.org/specifications).
+  Only table values needed for the calculations are reproduced in `reference/`; no spec text
+  or documents are included.
+- **[py3gpp](https://pypi.org/project/py3gpp/)** (open source): used only as an independent
+  cross-check of the golden answers and tables (`src/crosscheck.py`), not to produce them.
+- **Tools:** the code was written with AI coding assistance (see [Author](#author)).
 
 ## Limitations
 
