@@ -184,17 +184,20 @@ _Results will be added after the full run._
   add them with one command.
 - **Free-tier quotas.** The Gemini free tier allows **20 requests per day per model** (as of
   Nov 2026), so the 36 Gemini 3.8 Flash answers were collected over several days using the
-  runner's resume feature. Groq's per-minute token limits can block or cut off long reasoning
+  runner's resume feature. Failed attempts (for example 503 "high demand" errors) also
+  count against that quota. Groq's per-minute token limits can block or cut off long reasoning
   outputs. Quota problems show up as `error` or `truncated` and are re-run, never counted as `wrong`.
 - **Small task set.** 12 tasks × 3 samples gives a directional signal, not tight confidence
   intervals. The task generator makes it easy to add more configurations.
-- **Scope.** Downlink PDSCH, FR1, single-symbol DM-RS, PDSCH mapping type A, no
-  limited-buffer rate matching. Uplink transform precoding, mapping type B, FR2 and
-  multi-TRP are not covered yet. The L3 rate-matching prompts state that limited
-  buffer rate matching is not configured. This is a stated assumption: E does not depend on N_cb, so it
-  does not change the answer. L4 covers LBRM explicitly.
-- **Hand-entered spec tables.** The MCS, TBS, N_RB and DM-RS tables were entered by hand
-  from the 3GPP specifications and checked by the author. Corrections only need a table
+- **Scope.** Downlink PDSCH, FR1, single-symbol DM-RS, PDSCH mapping type A, single DL BWP
+  spanning the carrier. Uplink transform precoding, mapping type B, FR2 and multi-TRP are not
+  covered yet. The L3 rate-matching prompts state that limited-buffer rate matching is not
+  configured. E does not depend on N_cb, so this assumption does not change the answer.
+  L4 covers LBRM explicitly.
+- **Hand-entered spec tables.** The spec tables were entered by hand from the 3GPP
+  specifications. The TBS table, MCS index table 1 and the LDPC lifting sizes are also
+  checked automatically against py3gpp (`python -m src.crosscheck`). The rest (MCS index
+  table 2, N_RB, DM-RS, LBRM tables) were checked by the author. Corrections only need a table
   edit and `python -m src.build_tasks`. Model responses can be regraded without rerunning
   the models, because the prompts contain no derived values.
 
