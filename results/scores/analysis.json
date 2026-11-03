@@ -1,0 +1,758 @@
+[
+  {
+    "model": "gemini:gemma-4-31b-it",
+    "task_id": "tbs-156-cap",
+    "level": 1,
+    "sample": 0,
+    "parsed": 67392,
+    "expected": 54296,
+    "first_break": "N_RE"
+  },
+  {
+    "model": "gemini:gemma-4-31b-it",
+    "task_id": "lbrm-k0-rv3-maxmimo8",
+    "level": 4,
+    "sample": 0,
+    "parsed": 92160,
+    "expected": 14592,
+    "first_break": "n_PRB"
+  },
+  {
+    "model": "gemini:gemma-4-31b-it",
+    "task_id": "tbs-156-cap",
+    "level": 1,
+    "sample": 1,
+    "parsed": 40416,
+    "expected": 54296,
+    "first_break": "N_RE"
+  },
+  {
+    "model": "gemini:gemma-4-31b-it",
+    "task_id": "tbs-156-cap",
+    "level": 1,
+    "sample": 2,
+    "parsed": 54789,
+    "expected": 54296,
+    "first_break": "N_RE"
+  },
+  {
+    "model": "gemini:gemma-4-31b-it",
+    "task_id": "tbs-256qam-xoverhead",
+    "level": 1,
+    "sample": 1,
+    "parsed": 160225,
+    "expected": 143400,
+    "first_break": "N_info"
+  },
+  {
+    "model": "gemini:gemma-4-31b-it",
+    "task_id": "tbs-256qam-xoverhead",
+    "level": 1,
+    "sample": 2,
+    "parsed": 106848,
+    "expected": 143400,
+    "first_break": "N_info"
+  },
+  {
+    "model": "gemini:gemma-4-31b-it",
+    "task_id": "tbs-low-rate-segmentation",
+    "level": 1,
+    "sample": 0,
+    "parsed": 314496,
+    "expected": 59496,
+    "first_break": "N_RE"
+  },
+  {
+    "model": "gemini:gemma-4-31b-it",
+    "task_id": "tbs-low-rate-segmentation",
+    "level": 1,
+    "sample": 1,
+    "parsed": 448058,
+    "expected": 59496,
+    "first_break": "N_info"
+  },
+  {
+    "model": "gemini:gemma-4-31b-it",
+    "task_id": "tbs-low-rate-segmentation",
+    "level": 1,
+    "sample": 2,
+    "parsed": 64471,
+    "expected": 59496,
+    "first_break": "N_info"
+  },
+  {
+    "model": "gemini:gemma-4-31b-it",
+    "task_id": "tbs-256qam-xoverhead",
+    "level": 1,
+    "sample": 0,
+    "parsed": 44055,
+    "expected": 143400,
+    "first_break": "N_info"
+  },
+  {
+    "model": "gemini:gemma-4-31b-it",
+    "task_id": "ldpc-filler-bits-bg2-large-tb",
+    "level": 1,
+    "sample": 0,
+    "parsed": 2892,
+    "expected": 96,
+    "first_break": "K'"
+  },
+  {
+    "model": "gemini:gemma-4-31b-it",
+    "task_id": "cfg-tbs-100mhz-256qam-4layer",
+    "level": 2,
+    "sample": 0,
+    "parsed": 742210,
+    "expected": 868584,
+    "first_break": "N_RE"
+  },
+  {
+    "model": "gemini:gemma-4-31b-it",
+    "task_id": "cfg-tbs-100mhz-256qam-4layer",
+    "level": 2,
+    "sample": 1,
+    "parsed": 560990,
+    "expected": 868584,
+    "first_break": "N_RE"
+  },
+  {
+    "model": "gemini:gemma-4-31b-it",
+    "task_id": "cfg-tbs-100mhz-256qam-4layer",
+    "level": 2,
+    "sample": 2,
+    "parsed": 804000,
+    "expected": 868584,
+    "first_break": "N_RE"
+  },
+  {
+    "model": "gemini:gemma-4-31b-it",
+    "task_id": "cfg-tbs-dmrs-type2-xoverhead",
+    "level": 2,
+    "sample": 0,
+    "parsed": 41167,
+    "expected": 65576,
+    "first_break": "n_PRB"
+  },
+  {
+    "model": "gemini:gemma-4-31b-it",
+    "task_id": "cfg-tbs-dmrs-type2-xoverhead",
+    "level": 2,
+    "sample": 1,
+    "parsed": 12868,
+    "expected": 65576,
+    "first_break": "n_PRB"
+  },
+  {
+    "model": "gemini:gemma-4-31b-it",
+    "task_id": "cfg-tbs-dmrs-type2-xoverhead",
+    "level": 2,
+    "sample": 2,
+    "parsed": 40296,
+    "expected": 65576,
+    "first_break": "N_RE"
+  },
+  {
+    "model": "gemini:gemma-4-31b-it",
+    "task_id": "cfg-tbs-156-cap-derived",
+    "level": 2,
+    "sample": 0,
+    "parsed": 25876,
+    "expected": 100392,
+    "first_break": "N_info"
+  },
+  {
+    "model": "gemini:gemma-4-31b-it",
+    "task_id": "cfg-tbs-156-cap-derived",
+    "level": 2,
+    "sample": 1,
+    "parsed": 81357,
+    "expected": 100392,
+    "first_break": "N_info"
+  },
+  {
+    "model": "gemini:gemma-4-31b-it",
+    "task_id": "cfg-tbs-156-cap-derived",
+    "level": 2,
+    "sample": 2,
+    "parsed": 175960,
+    "expected": 100392,
+    "first_break": "N_RE"
+  },
+  {
+    "model": "gemini:gemma-4-31b-it",
+    "task_id": "cfg-filler-bits-ld-trap",
+    "level": 3,
+    "sample": 0,
+    "parsed": 7,
+    "expected": 136,
+    "first_break": "N_RE"
+  },
+  {
+    "model": "gemini:gemma-4-31b-it",
+    "task_id": "cfg-filler-bits-ld-trap",
+    "level": 3,
+    "sample": 1,
+    "parsed": 268,
+    "expected": 136,
+    "first_break": "n_PRB"
+  },
+  {
+    "model": "gemini:gemma-4-31b-it",
+    "task_id": "cfg-filler-bits-ld-trap",
+    "level": 3,
+    "sample": 2,
+    "parsed": 64,
+    "expected": 136,
+    "first_break": "N_RE"
+  },
+  {
+    "model": "gemini:gemma-4-31b-it",
+    "task_id": "cfg-ratematch-E-xoverhead",
+    "level": 3,
+    "sample": 0,
+    "parsed": 16718,
+    "expected": 13992,
+    "first_break": "N_RE"
+  },
+  {
+    "model": "gemini:gemma-4-31b-it",
+    "task_id": "cfg-ratematch-E-xoverhead",
+    "level": 3,
+    "sample": 1,
+    "parsed": 16808,
+    "expected": 13992,
+    "first_break": "N_RE"
+  },
+  {
+    "model": "gemini:gemma-4-31b-it",
+    "task_id": "cfg-ratematch-E-xoverhead",
+    "level": 3,
+    "sample": 2,
+    "parsed": 8549,
+    "expected": 13992,
+    "first_break": "N_RE"
+  },
+  {
+    "model": "gemini:gemma-4-31b-it",
+    "task_id": "cfg-ratematch-E-last-cb",
+    "level": 3,
+    "sample": 1,
+    "parsed": 11948,
+    "expected": 9088,
+    "first_break": "N_RE"
+  },
+  {
+    "model": "gemini:gemma-4-31b-it",
+    "task_id": "cfg-ratematch-E-last-cb",
+    "level": 3,
+    "sample": 2,
+    "parsed": 13794,
+    "expected": 9088,
+    "first_break": "N_RE"
+  },
+  {
+    "model": "gemini:gemma-4-31b-it",
+    "task_id": "lbrm-k0-rv3-maxmimo8",
+    "level": 4,
+    "sample": 1,
+    "parsed": 166584,
+    "expected": 14592,
+    "first_break": "n_PRB"
+  },
+  {
+    "model": "gemini:gemma-4-31b-it",
+    "task_id": "lbrm-k0-rv3-maxmimo8",
+    "level": 4,
+    "sample": 2,
+    "parsed": 51840,
+    "expected": 14592,
+    "first_break": "N_info"
+  },
+  {
+    "model": "gemini:gemma-4-31b-it",
+    "task_id": "lbrm-k0-rv2-2layer",
+    "level": 4,
+    "sample": 0,
+    "parsed": 340704,
+    "expected": 8832,
+    "first_break": "n_PRB"
+  },
+  {
+    "model": "gemini:gemma-4-31b-it",
+    "task_id": "lbrm-k0-rv2-2layer",
+    "level": 4,
+    "sample": 1,
+    "parsed": 7776,
+    "expected": 8832,
+    "first_break": "n_PRB"
+  },
+  {
+    "model": "gemini:gemma-4-31b-it",
+    "task_id": "ldpc-filler-bits-bg2-large-tb",
+    "level": 1,
+    "sample": 1,
+    "parsed": 0,
+    "expected": 96,
+    "first_break": "K'"
+  },
+  {
+    "model": "gemini:gemma-4-31b-it",
+    "task_id": "ldpc-filler-bits-bg2-large-tb",
+    "level": 1,
+    "sample": 2,
+    "parsed": 233,
+    "expected": 96,
+    "first_break": "K'"
+  },
+  {
+    "model": "gemini:gemma-4-31b-it",
+    "task_id": "lbrm-k0-rv2-2layer",
+    "level": 4,
+    "sample": 2,
+    "parsed": 72831,
+    "expected": 8832,
+    "first_break": "n_PRB"
+  },
+  {
+    "model": "gemini:gemma-4-31b-it",
+    "task_id": "ctx-paging-tb-scaling",
+    "level": 5,
+    "sample": 0,
+    "parsed": 2451,
+    "expected": 3824,
+    "first_break": "N_info"
+  },
+  {
+    "model": "gemini:gemma-4-31b-it",
+    "task_id": "ctx-paging-tb-scaling",
+    "level": 5,
+    "sample": 1,
+    "parsed": 3712,
+    "expected": 3824,
+    "first_break": "N_info"
+  },
+  {
+    "model": "gemini:gemma-4-31b-it",
+    "task_id": "ctx-paging-tb-scaling",
+    "level": 5,
+    "sample": 2,
+    "parsed": 3797,
+    "expected": 3824,
+    "first_break": "N_info"
+  },
+  {
+    "model": "gemini:gemma-4-31b-it",
+    "task_id": "ctx-2cw-7layer-tb2",
+    "level": 5,
+    "sample": 2,
+    "parsed": 264045,
+    "expected": 655800,
+    "first_break": "N_RE"
+  },
+  {
+    "model": "gemini:gemma-4-31b-it",
+    "task_id": "cfg-ratematch-E-last-cb",
+    "level": 3,
+    "sample": 0,
+    "parsed": 22071,
+    "expected": 9088,
+    "first_break": "N_RE"
+  },
+  {
+    "model": "gemini:gemma-4-31b-it",
+    "task_id": "ctx-2cw-7layer-tb2",
+    "level": 5,
+    "sample": 0,
+    "parsed": 219596,
+    "expected": 655800,
+    "first_break": "N_RE"
+  },
+  {
+    "model": "gemini:gemma-4-31b-it",
+    "task_id": "ctx-2cw-7layer-tb2",
+    "level": 5,
+    "sample": 1,
+    "parsed": 49227,
+    "expected": 655800,
+    "first_break": "N_info"
+  },
+  {
+    "model": "groq:openai/gpt-oss-120b",
+    "task_id": "tbs-156-cap",
+    "level": 1,
+    "sample": 0,
+    "parsed": 81880,
+    "expected": 54296,
+    "first_break": "N_RE"
+  },
+  {
+    "model": "groq:openai/gpt-oss-120b",
+    "task_id": "tbs-156-cap",
+    "level": 1,
+    "sample": 1,
+    "parsed": 24920,
+    "expected": 54296,
+    "first_break": "N_RE"
+  },
+  {
+    "model": "groq:openai/gpt-oss-120b",
+    "task_id": "tbs-low-rate-segmentation",
+    "level": 1,
+    "sample": 0,
+    "parsed": 94600,
+    "expected": 59496,
+    "first_break": "N_info"
+  },
+  {
+    "model": "groq:openai/gpt-oss-120b",
+    "task_id": "tbs-low-rate-segmentation",
+    "level": 1,
+    "sample": 1,
+    "parsed": 61440,
+    "expected": 59496,
+    "first_break": "N_info"
+  },
+  {
+    "model": "groq:openai/gpt-oss-120b",
+    "task_id": "tbs-low-rate-segmentation",
+    "level": 1,
+    "sample": 2,
+    "parsed": 73632,
+    "expected": 59496,
+    "first_break": "N_info"
+  },
+  {
+    "model": "groq:openai/gpt-oss-120b",
+    "task_id": "tbs-256qam-xoverhead",
+    "level": 1,
+    "sample": 0,
+    "parsed": 38240,
+    "expected": 143400,
+    "first_break": "N_info"
+  },
+  {
+    "model": "groq:openai/gpt-oss-120b",
+    "task_id": "tbs-256qam-xoverhead",
+    "level": 1,
+    "sample": 2,
+    "parsed": 47280,
+    "expected": 143400,
+    "first_break": "N_info"
+  },
+  {
+    "model": "groq:openai/gpt-oss-120b",
+    "task_id": "tbs-156-cap",
+    "level": 1,
+    "sample": 2,
+    "parsed": 86144,
+    "expected": 54296,
+    "first_break": "N_RE"
+  },
+  {
+    "model": "groq:openai/gpt-oss-120b",
+    "task_id": "tbs-256qam-xoverhead",
+    "level": 1,
+    "sample": 1,
+    "parsed": 94184,
+    "expected": 143400,
+    "first_break": "N_info"
+  },
+  {
+    "model": "groq:openai/gpt-oss-120b",
+    "task_id": "ldpc-filler-bits-bg2-large-tb",
+    "level": 1,
+    "sample": 0,
+    "parsed": 216,
+    "expected": 96,
+    "first_break": "K'"
+  },
+  {
+    "model": "groq:openai/gpt-oss-120b",
+    "task_id": "ldpc-filler-bits-bg2-large-tb",
+    "level": 1,
+    "sample": 1,
+    "parsed": 280,
+    "expected": 96,
+    "first_break": "K'"
+  },
+  {
+    "model": "groq:openai/gpt-oss-120b",
+    "task_id": "ldpc-filler-bits-bg2-large-tb",
+    "level": 1,
+    "sample": 2,
+    "parsed": 2664,
+    "expected": 96,
+    "first_break": "K'"
+  },
+  {
+    "model": "groq:openai/gpt-oss-120b",
+    "task_id": "cfg-tbs-100mhz-256qam-4layer",
+    "level": 2,
+    "sample": 0,
+    "parsed": 53824,
+    "expected": 868584,
+    "first_break": "N_RE"
+  },
+  {
+    "model": "groq:openai/gpt-oss-120b",
+    "task_id": "cfg-tbs-100mhz-256qam-4layer",
+    "level": 2,
+    "sample": 2,
+    "parsed": 737328,
+    "expected": 868584,
+    "first_break": "N_RE"
+  },
+  {
+    "model": "groq:openai/gpt-oss-120b",
+    "task_id": "cfg-tbs-dmrs-type2-xoverhead",
+    "level": 2,
+    "sample": 1,
+    "parsed": 102912,
+    "expected": 65576,
+    "first_break": "n_PRB"
+  },
+  {
+    "model": "groq:openai/gpt-oss-120b",
+    "task_id": "cfg-tbs-156-cap-derived",
+    "level": 2,
+    "sample": 0,
+    "parsed": 38240,
+    "expected": 100392,
+    "first_break": "N_RE"
+  },
+  {
+    "model": "groq:openai/gpt-oss-120b",
+    "task_id": "cfg-tbs-156-cap-derived",
+    "level": 2,
+    "sample": 2,
+    "parsed": 65104,
+    "expected": 100392,
+    "first_break": "N_info"
+  },
+  {
+    "model": "groq:openai/gpt-oss-120b",
+    "task_id": "cfg-filler-bits-ld-trap",
+    "level": 3,
+    "sample": 1,
+    "parsed": 51,
+    "expected": 136,
+    "first_break": "n_PRB"
+  },
+  {
+    "model": "groq:openai/gpt-oss-120b",
+    "task_id": "cfg-ratematch-E-xoverhead",
+    "level": 3,
+    "sample": 0,
+    "parsed": 5551,
+    "expected": 13992,
+    "first_break": "N_RE"
+  },
+  {
+    "model": "groq:openai/gpt-oss-120b",
+    "task_id": "cfg-ratematch-E-xoverhead",
+    "level": 3,
+    "sample": 2,
+    "parsed": 10176,
+    "expected": 13992,
+    "first_break": "N_RE"
+  },
+  {
+    "model": "groq:openai/gpt-oss-120b",
+    "task_id": "cfg-ratematch-E-last-cb",
+    "level": 3,
+    "sample": 1,
+    "parsed": 9059,
+    "expected": 9088,
+    "first_break": "N_RE"
+  },
+  {
+    "model": "groq:openai/gpt-oss-120b",
+    "task_id": "lbrm-k0-rv3-maxmimo8",
+    "level": 4,
+    "sample": 0,
+    "parsed": 12288,
+    "expected": 14592,
+    "first_break": "N_RE"
+  },
+  {
+    "model": "groq:openai/gpt-oss-120b",
+    "task_id": "lbrm-k0-rv3-maxmimo8",
+    "level": 4,
+    "sample": 2,
+    "parsed": 31980,
+    "expected": 14592,
+    "first_break": "n_PRB"
+  },
+  {
+    "model": "groq:openai/gpt-oss-120b",
+    "task_id": "lbrm-k0-rv2-2layer",
+    "level": 4,
+    "sample": 1,
+    "parsed": 4068,
+    "expected": 8832,
+    "first_break": "n_PRB"
+  },
+  {
+    "model": "groq:openai/gpt-oss-120b",
+    "task_id": "cfg-tbs-100mhz-256qam-4layer",
+    "level": 2,
+    "sample": 1,
+    "parsed": 860104,
+    "expected": 868584,
+    "first_break": "N_RE"
+  },
+  {
+    "model": "groq:openai/gpt-oss-120b",
+    "task_id": "cfg-tbs-dmrs-type2-xoverhead",
+    "level": 2,
+    "sample": 2,
+    "parsed": 55152,
+    "expected": 65576,
+    "first_break": "n_PRB"
+  },
+  {
+    "model": "groq:openai/gpt-oss-120b",
+    "task_id": "cfg-filler-bits-ld-trap",
+    "level": 3,
+    "sample": 0,
+    "parsed": 1,
+    "expected": 136,
+    "first_break": "N_RE"
+  },
+  {
+    "model": "groq:openai/gpt-oss-120b",
+    "task_id": "cfg-ratematch-E-xoverhead",
+    "level": 3,
+    "sample": 1,
+    "parsed": 10175,
+    "expected": 13992,
+    "first_break": "N_RE"
+  },
+  {
+    "model": "groq:openai/gpt-oss-120b",
+    "task_id": "lbrm-k0-rv3-maxmimo8",
+    "level": 4,
+    "sample": 1,
+    "parsed": 7626,
+    "expected": 14592,
+    "first_break": "n_PRB"
+  },
+  {
+    "model": "groq:openai/gpt-oss-120b",
+    "task_id": "lbrm-k0-rv2-2layer",
+    "level": 4,
+    "sample": 2,
+    "parsed": 6336,
+    "expected": 8832,
+    "first_break": "n_PRB"
+  },
+  {
+    "model": "groq:openai/gpt-oss-120b",
+    "task_id": "ctx-paging-tb-scaling",
+    "level": 5,
+    "sample": 1,
+    "parsed": 3264,
+    "expected": 3824,
+    "first_break": "N_info"
+  },
+  {
+    "model": "groq:openai/gpt-oss-120b",
+    "task_id": "ctx-2cw-7layer-tb2",
+    "level": 5,
+    "sample": 0,
+    "parsed": 117856,
+    "expected": 655800,
+    "first_break": "n_PRB"
+  },
+  {
+    "model": "groq:openai/gpt-oss-120b",
+    "task_id": "cfg-tbs-dmrs-type2-xoverhead",
+    "level": 2,
+    "sample": 0,
+    "parsed": 61992,
+    "expected": 65576,
+    "first_break": "N_RE"
+  },
+  {
+    "model": "groq:openai/gpt-oss-120b",
+    "task_id": "cfg-tbs-156-cap-derived",
+    "level": 2,
+    "sample": 1,
+    "parsed": 194360,
+    "expected": 100392,
+    "first_break": "N_info"
+  },
+  {
+    "model": "groq:openai/gpt-oss-120b",
+    "task_id": "cfg-filler-bits-ld-trap",
+    "level": 3,
+    "sample": 2,
+    "parsed": 741,
+    "expected": 136,
+    "first_break": "N_RE"
+  },
+  {
+    "model": "groq:openai/gpt-oss-120b",
+    "task_id": "cfg-ratematch-E-last-cb",
+    "level": 3,
+    "sample": 2,
+    "parsed": 19110,
+    "expected": 9088,
+    "first_break": "N_RE"
+  },
+  {
+    "model": "groq:openai/gpt-oss-120b",
+    "task_id": "ctx-paging-tb-scaling",
+    "level": 5,
+    "sample": 0,
+    "parsed": 8640,
+    "expected": 3824,
+    "first_break": "N_info"
+  },
+  {
+    "model": "groq:openai/gpt-oss-120b",
+    "task_id": "ctx-2cw-7layer-tb2",
+    "level": 5,
+    "sample": 1,
+    "parsed": 138160,
+    "expected": 655800,
+    "first_break": "N_RE"
+  },
+  {
+    "model": "groq:openai/gpt-oss-120b",
+    "task_id": "cfg-ratematch-E-last-cb",
+    "level": 3,
+    "sample": 0,
+    "parsed": 11772,
+    "expected": 9088,
+    "first_break": "N_RE"
+  },
+  {
+    "model": "groq:openai/gpt-oss-120b",
+    "task_id": "lbrm-k0-rv2-2layer",
+    "level": 4,
+    "sample": 0,
+    "parsed": 3168,
+    "expected": 8832,
+    "first_break": "n_PRB"
+  },
+  {
+    "model": "groq:openai/gpt-oss-120b",
+    "task_id": "ctx-paging-tb-scaling",
+    "level": 5,
+    "sample": 2,
+    "parsed": 808,
+    "expected": 3824,
+    "first_break": "N_info"
+  },
+  {
+    "model": "groq:openai/gpt-oss-120b",
+    "task_id": "ctx-2cw-7layer-tb2",
+    "level": 5,
+    "sample": 2,
+    "parsed": 136880,
+    "expected": 655800,
+    "first_break": "N_RE"
+  }
+]
