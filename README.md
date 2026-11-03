@@ -410,3 +410,7 @@ Built for the micro1 AI eval hackathon, 2026.
 the tasks, checked the golden answers and spec tables against the 3GPP specifications, ran
 the evaluations and reviewed every change. The golden answers are also confirmed
 independently with py3gpp (`python -m src.crosscheck`).
+
+## Contributors
+
+- [Fleur41](https://github.com/Fleur41): author (domain, tasks, golden-answer verification, evaluation runs)
