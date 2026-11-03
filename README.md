@@ -274,11 +274,20 @@ intermediate value that never appears in the model's working. It is a determinis
 heuristic (exact integer matching, no LLM judge); spot checks by hand agreed with it.
 Full per-response table: `results/scores/analysis.md`.
 
-[PASTE THE SUMMARY TABLE FROM results/scores/analysis.md AFTER THE FINAL RUN.]
+First step where the working leaves the reference procedure (all 84 wrong answers):
 
-The breaks land on the steps the tasks were designed to trap: all 6 wrong answers on
-`tbs-156-cap` break at **N_RE** (the 156-RE cap), and the L3 `cfg-filler-bits-ld-trap`
-failures break at N_RE as well (the DM-RS symbol count). [UPDATE COUNTS AFTER FINAL RUN.]
+| Model | Wrong | n_PRB | N_RE | N_info | K' |
+|---|---|---|---|---|---|
+| gemini:gemma-4-31b-it | 42 | 8 | 19 | 12 | 3 |
+| groq:openai/gpt-oss-120b | 42 | 9 | 19 | 11 | 3 |
+
+Most failures happen **early**: 55 of the 84 wrong answers (65%) already leave the spec at
+the bandwidth lookup (n_PRB) or the resource-element count (N_RE), the first two steps of
+the chain. The breaks land on the steps the tasks were designed to trap: all 6 wrong
+answers on `tbs-156-cap` break at **N_RE** (the 156-RE cap), 4 of the 6 on the L3
+`cfg-filler-bits-ld-trap` break at N_RE (the DM-RS symbol count) and the other 2 one step
+earlier at n_PRB, and all 6 on `ldpc-filler-bits-bg2-large-tb` break at **K′** (code-block
+segmentation, where the base-graph choice matters).
 
 The patterns below are taken from the raw responses in `results/raw/` (task and sample are
 given so each one can be checked).
