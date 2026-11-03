@@ -312,7 +312,7 @@ built around, and it was also the failure seen in the pilot.
 **4. Getting the rate-matching split backwards (gpt-oss-120b).** When G is not divisible by
 the number of code blocks, the spec gives the *last* blocks the larger length E. On
 `cfg-ratematch-E-last-cb` gpt-oss stated that the last block "receives only the base
-amount" (9059; golden 9088).
+amount" (sample 1: 9059; golden 9088).
 
 **5. Simplified k0 formula for limited-buffer rate matching (both open models).** TS 38.212
 Table 5.4.2.1-2 defines k0 for rv = 3 with BG1 as ⌊56·N_cb / (66·Z_c)⌋·Z_c. Both open models
@@ -335,14 +335,14 @@ shown separately as "+N excl." and re-run; they never count as wrong.
 
 ## Prior work and sources
 
-- **Built during the hackathon** [AUTHOR: CONFIRM]. No code, tasks or data existed before the hackathon. No
+- **Built during the hackathon.** No code, tasks or data existed before the hackathon. No
   existing benchmark or dataset was used; all 14 tasks and their configurations were written
   for this eval.
 - **3GPP specifications (the source of every rule and table):**
-  - TS 38.214 (NR; Physical layer procedures for data), §5.1.3 [VERSION, e.g. V18.x.0]
-  - TS 38.212 (NR; Multiplexing and channel coding), §5.2.2, §5.3.2, §5.4.2.1, §7.2.2 [VERSION]
-  - TS 38.211 (NR; Physical channels and modulation), §7.4.1.1.2 [VERSION]
-  - TS 38.101-1 (NR; UE radio transmission and reception, Part 1: FR1), Table 5.3.2-1 [VERSION]
+  - TS 38.214 (NR; Physical layer procedures for data), §5.1.3 (Release 18)
+  - TS 38.212 (NR; Multiplexing and channel coding), §5.2.2, §5.3.2, §5.4.2.1, §7.2.2 (Release 18)
+  - TS 38.211 (NR; Physical channels and modulation), §7.3.1.3, §7.4.1.1.2 (Release 18)
+  - TS 38.101-1 (NR; UE radio transmission and reception, Part 1: FR1), Table 5.3.2-1 (Release 18)
 
   The specifications are freely available from [3gpp.org](https://www.3gpp.org/specifications).
   Only table values needed for the calculations are reproduced in `reference/`; no spec text
