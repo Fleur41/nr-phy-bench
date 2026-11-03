@@ -28,7 +28,8 @@ through, so the frontier result is a small sample.
 
 ## Video walkthrough
 
-**[VIDEO LINK: add after upload, and check it opens in a private window without requesting access]**
+**[ Watch on YouTube: https://youtu.be/iaxXUz7jqYo** (3:48)
+        ← click here, on the empty line below, and drop the video]**
 
 The video (≤ 5 min) covers the problem, why models fail, how the eval works and the results.
 
