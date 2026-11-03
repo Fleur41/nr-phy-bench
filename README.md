@@ -28,7 +28,9 @@ through, so the frontier result is a small sample.
 
 ## Video walkthrough
 
-**[VIDEO LINK: add after upload, and check it opens in a private window without requesting access]**
+[![NR-PHY-Bench demo video](https://img.youtube.com/vi/iaxXUz7jqYo/hqdefault.jpg)](https://youtu.be/iaxXUz7jqYo)
+
+**▶ Watch on YouTube: https://youtu.be/iaxXUz7jqYo** (3:48)
 
 The video (≤ 5 min) covers the problem, why models fail, how the eval works and the results.
 
@@ -450,9 +452,9 @@ Built for the micro1 AI eval hackathon, 2026.
 [Claude Code](https://claude.com/claude-code) (Anthropic). The author chose the domain and
 the tasks, checked the golden answers and spec tables against the 3GPP specifications, ran
 the evaluations and reviewed every change. The golden answers are also confirmed
-independently with py3gpp (`python -m src.crosscheck`). The demo video was assembled with
-Claude Code from the repository's real outputs (README tables, test and cross-check runs), and
-its narration is a synthetic voice (macOS text-to-speech) reading the author's script.
+independently with py3gpp (`python -m src.crosscheck`). The demo video's slides were
+assembled with Claude Code from the repository's real outputs (README tables, test and
+cross-check runs); the narration is the author's own voice.
 
 ## Contributors
 
