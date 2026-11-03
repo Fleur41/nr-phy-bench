@@ -34,7 +34,6 @@ The video (≤ 5 min) covers the problem, why models fail, how the eval works an
 
 
 
-https://github.com/user-attachments/assets/7a8b271a-3324-4cce-bbba-7d48ae9ee6dd
 
 
 
